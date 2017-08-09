@@ -14,3 +14,8 @@ These keybinds function even when the program does not have focus.
 * Play/Continue Midi: Numpad 0
 * Pause Midi: Numpad 1
 * Stop Midi: Numpad 2
+
+
+### Youtube Preview
+
+[![Youtube Link](http://i.imgur.com/oyYEk98.png)](https://www.youtube.com/watch?v=NsOI2k8nKbQ)

@@ -1,0 +1,99 @@
+﻿<Window x:Class="TerrariaMidiPlayer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TerrariaMidiPlayer"
+        mc:Ignorable="d"
+        Title="Terraria Midi Player" Height="369" Width="525" Closing="OnWindowClosing" Icon="App.ico" ResizeMode="CanMinimize" SnapsToDevicePixels="True" UseLayoutRounding="True" Loaded="OnLoaded">
+    <Window.Resources>
+        <Style TargetType="ListBox">
+            <Style.Resources>
+                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="{x:Static SystemColors.HighlightColor}"/>
+                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="{x:Static SystemColors.HighlightTextColor}"/>
+            </Style.Resources>
+        </Style>
+    </Window.Resources>
+    <Grid>
+
+        <Menu DockPanel.Dock="Top" x:Name="menu" BorderThickness="0,0,0,1" BorderBrush="#FF919395" VerticalAlignment="Top">
+            <Menu.Background>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="#FFECEEF1" Offset="0"/>
+                    <GradientStop Color="#FFD6D9DC" Offset="0.852"/>
+                    <GradientStop Color="#FFE6E8EB" Offset="1"/>
+                </LinearGradientBrush>
+            </Menu.Background>
+            <MenuItem Header="File">
+                <MenuItem Header="Exit">
+                    <MenuItem.Icon>
+                        <Image Source="/TerrariaMidiPlayer;component/Resources/Icons/Exit.png" />
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+            <MenuItem Header="Options">
+                <MenuItem Header="Overlay" IsChecked="True" IsCheckable="True">
+                    <MenuItem.Icon>
+                        <Image Source="Resources/Icons/Overlay.png" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Keybinds...">
+                    <MenuItem.Icon>
+                        <Image Source="Resources/Icons/Keybinds.png" />
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+
+            <MenuItem Header="Help">
+                <MenuItem Header="About">
+                    <MenuItem.Icon>
+                        <Image Source="/TerrariaMidiPlayer;component/Resources/Icons/About.png" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Credits">
+                    <MenuItem.Icon>
+                        <Image Source="/TerrariaMidiPlayer;component/Resources/Icons/Credits.png" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Open Readme">
+                    <MenuItem.Icon>
+                        <Image Source="/TerrariaMidiPlayer;component/Resources/Icons/Readme.png" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Open Changelog">
+                    <MenuItem.Icon>
+                        <Image Source="/TerrariaMidiPlayer;component/Resources/Icons/Changelog.png" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="View on GitHub">
+                    <MenuItem.Icon>
+                        <Image Source="/TerrariaMidiPlayer;component/Resources/Icons/Github.png" />
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+        </Menu>
+        <local:ProjectileControl x:Name="projectileControl" Margin="0,0,10,10" ProjectilesChanged="OnProjectileChanged" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
+        <ListBox x:Name="listMidis" HorizontalAlignment="Left" Margin="10,53,0,116" Width="144" SelectionChanged="OnMidiChanged">
+            
+        </ListBox>
+        <Label Content="Midis" HorizontalAlignment="Left" Margin="10,27,0,0" VerticalAlignment="Top"/>
+        <ListBox x:Name="listParts" HorizontalAlignment="Left" Margin="10,0,0,10" Width="144" VerticalAlignment="Bottom" Height="80">
+            <ListBox.Resources>
+                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}">Red</SolidColorBrush>
+            </ListBox.Resources>
+        </ListBox>
+        <Label Content="Parts" HorizontalAlignment="Left" Margin="10,0,0,90" VerticalAlignment="Bottom"/>
+        <Button x:Name="buttonSoot" HorizontalAlignment="Left" Margin="109,30,0,0" VerticalAlignment="Top" Width="20" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" ToolTip="Move Midi Up" Focusable="False" IsTabStop="False" Height="20">
+            <Image Source="Resources/Icons/MoveUp.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Button>
+        <Button x:Name="buttonSoot_Copy" HorizontalAlignment="Left" Margin="134,30,0,0" VerticalAlignment="Top" Width="20" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" ToolTip="Move Midi Down" Focusable="False" IsTabStop="False" Height="20">
+            <Image Source="Resources/Icons/MoveDown.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Button>
+        <Button x:Name="buttonSoot_Copy1" HorizontalAlignment="Left" Margin="84,30,0,0" VerticalAlignment="Top" Width="20" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" ToolTip="Remove Midi" Focusable="False" IsTabStop="False" Height="20" Click="OnRemoveMidi">
+            <Image Source="Resources/Icons/MidiRemove.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Button>
+        <Button x:Name="buttonSoot_Copy2" HorizontalAlignment="Left" Margin="59,30,0,0" VerticalAlignment="Top" Width="20" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" ToolTip="Add Midi" Focusable="False" IsTabStop="False" Height="20" Click="OnAddMidi">
+            <Image Source="Resources/Icons/MidiAdd.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Button>
+    </Grid>
+</Window>

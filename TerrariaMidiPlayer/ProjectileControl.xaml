@@ -1,0 +1,43 @@
+﻿<UserControl x:Class="TerrariaMidiPlayer.ProjectileControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:TerrariaMidiPlayer"
+             mc:Ignorable="d" Height="114" Width="228" Loaded="OnLoaded" UseLayoutRounding="True" HorizontalAlignment="Left" VerticalAlignment="Top">
+    <Grid>
+
+        <GroupBox x:Name="groupBox" Header="Projectiles" TabIndex="2147483645" Margin="0,0,0,2">
+            <Grid Margin="0">
+                <Label Content="Range" HorizontalAlignment="Right" Margin="0,52,166,0" VerticalAlignment="Top"/>
+                <Label Content="Angle" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,166,0"/>
+                <local:NumericUpDown x:Name="numericAngle" Increment="5" Maximum="359" Value="0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="60" Margin="0,17,101,0" ValueChanged="OnAngleValueChanged"/>
+                <local:NumericUpDown x:Name="numericRange" Increment="5" Maximum="360" Value="360" HorizontalAlignment="Right" VerticalAlignment="Top" Width="60" Margin="0,54,101,0" ValueChanged="OnRangeValueChanged"/>
+            </Grid>
+        </GroupBox>
+        <Grid HorizontalAlignment="Right" Height="90" Margin="0,16,9,0" VerticalAlignment="Top" Width="90">
+            <Ellipse x:Name="circle" Fill="#FFC6CFD8" Width="88" Height="88" Stroke="Black" HorizontalAlignment="Center" VerticalAlignment="Center" MouseWheel="OnMouseWheel" MouseDown="OnMouseDown" MouseUp="OnMouseUp" MouseMove="OnMouseMove" Margin="0" />
+            <Path x:Name="path" Width="82" Height="82" Stroke="#FF3D0179" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" StrokeThickness="2" Margin="0" StrokeLineJoin="Bevel">
+                <Path.Fill>
+                    <ImageBrush ImageSource="/TerrariaMidiPlayer;component/Resources/NoteBackground.png" AlignmentY="Top" AlignmentX="Left" ViewboxUnits="Absolute" ViewportUnits="Absolute" TileMode="Tile" Viewbox="0,0,90,90" Viewport="0,0,90,90"/>
+                </Path.Fill>
+                <Path.Data>
+                    <PathGeometry>
+                        <PathGeometry.Figures>
+                            <PathFigureCollection>
+                                <PathFigure x:Name="figure" StartPoint="41,1">
+                                    <PathFigure.Segments>
+                                        <ArcSegment x:Name="arc" SweepDirection="Clockwise" Point="1,41" Size="40,40" IsLargeArc="True"/>
+                                        <LineSegment x:Name="line1" Point="41,41"/>
+                                        <LineSegment x:Name="line2" Point="41,1"/>
+                                    </PathFigure.Segments>
+                                </PathFigure>
+                            </PathFigureCollection>
+                        </PathGeometry.Figures>
+                    </PathGeometry>
+                </Path.Data>
+            </Path>
+            <Image x:Name="image" HorizontalAlignment="Center" Height="38" Margin="0" VerticalAlignment="Center" Width="28" IsHitTestVisible="False" Source="/TerrariaMidiPlayer;component/Resources/MagicalHarpFull.png" SnapsToDevicePixels="True" UseLayoutRounding="True" Stretch="None"/>
+        </Grid>
+    </Grid>
+</UserControl>

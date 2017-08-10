@@ -123,6 +123,16 @@ namespace TerrariaMidiPlayer.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap EditName {
+            get {
+                object obj = ResourceManager.GetObject("EditName", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap Empty {
             get {
                 object obj = ResourceManager.GetObject("Empty", resourceCulture);
@@ -206,6 +216,16 @@ namespace TerrariaMidiPlayer.Properties {
         internal static System.Drawing.Bitmap MidiAdd {
             get {
                 object obj = ResourceManager.GetObject("MidiAdd", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap MidiEdit {
+            get {
+                object obj = ResourceManager.GetObject("MidiEdit", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

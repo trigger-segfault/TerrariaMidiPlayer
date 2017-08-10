@@ -64,14 +64,12 @@ namespace TerrariaMidiPlayer {
 		private void OnMouseWheel(object sender, MouseWheelEventArgs e) {
 			if (e.Delta > 0 && range < 360) {
 				range = Math.Floor(Math.Min(360, range + 5));
-				Console.WriteLine((int)range);
 				numericRange.Value = (int)range;
 				RenderArc();
 				RaiseEvent(new RoutedEventArgs(ProjectileControl.ProjectilesChangedEvent));
 			}
 			else if (e.Delta < 0 && range > 0) {
 				range = Math.Floor(Math.Max(0, range - 5));
-				Console.WriteLine((int)range);
 				numericRange.Value = (int)range;
 				RenderArc();
 				RaiseEvent(new RoutedEventArgs(ProjectileControl.ProjectilesChangedEvent));
@@ -93,7 +91,6 @@ namespace TerrariaMidiPlayer {
 				return;
 			Point mouse = e.GetPosition(path);
 			angle = (Math.Atan2(mouse.Y - Radius + 1, mouse.X - Radius + 1) / Math.PI * 180 + 90 + 360) % 360;
-			Console.WriteLine((int)angle);
 			numericAngle.Value = (int)angle;
 			RenderArc();
 			RaiseEvent(new RoutedEventArgs(ProjectileControl.ProjectilesChangedEvent));

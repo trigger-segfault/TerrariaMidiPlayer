@@ -5,12 +5,23 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TerrariaMidiPlayer"
         mc:Ignorable="d"
-        Title="Terraria Midi Player" Height="369" Width="525" Closing="OnWindowClosing" Icon="App.ico" ResizeMode="CanMinimize" SnapsToDevicePixels="True" UseLayoutRounding="True" Loaded="OnLoaded">
+        Title="Terraria Midi Player" Height="366" Width="525" Closing="OnWindowClosing" Icon="App.ico" ResizeMode="CanMinimize" SnapsToDevicePixels="True" UseLayoutRounding="True" Loaded="OnLoaded" Background="#FFCFCCC8">
     <Window.Resources>
         <Style TargetType="ListBox">
             <Style.Resources>
                 <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="{x:Static SystemColors.HighlightColor}"/>
                 <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="{x:Static SystemColors.HighlightTextColor}"/>
+            </Style.Resources>
+        </Style>
+        <Style TargetType="Button">
+            <Style.Resources>
+                <Style TargetType="Image">
+                    <Style.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
             </Style.Resources>
         </Style>
     </Window.Resources>
@@ -72,28 +83,111 @@
                 </MenuItem>
             </MenuItem>
         </Menu>
-        <local:ProjectileControl x:Name="projectileControl" Margin="0,0,10,10" ProjectilesChanged="OnProjectileChanged" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
-        <ListBox x:Name="listMidis" HorizontalAlignment="Left" Margin="10,53,0,116" Width="144" SelectionChanged="OnMidiChanged">
-            
-        </ListBox>
-        <Label Content="Midis" HorizontalAlignment="Left" Margin="10,27,0,0" VerticalAlignment="Top"/>
-        <ListBox x:Name="listParts" HorizontalAlignment="Left" Margin="10,0,0,10" Width="144" VerticalAlignment="Bottom" Height="80">
-            <ListBox.Resources>
-                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}">Red</SolidColorBrush>
-            </ListBox.Resources>
-        </ListBox>
-        <Label Content="Parts" HorizontalAlignment="Left" Margin="10,0,0,90" VerticalAlignment="Bottom"/>
-        <Button x:Name="buttonSoot" HorizontalAlignment="Left" Margin="109,30,0,0" VerticalAlignment="Top" Width="20" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" ToolTip="Move Midi Up" Focusable="False" IsTabStop="False" Height="20">
-            <Image Source="Resources/Icons/MoveUp.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
-        </Button>
-        <Button x:Name="buttonSoot_Copy" HorizontalAlignment="Left" Margin="134,30,0,0" VerticalAlignment="Top" Width="20" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" ToolTip="Move Midi Down" Focusable="False" IsTabStop="False" Height="20">
-            <Image Source="Resources/Icons/MoveDown.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
-        </Button>
-        <Button x:Name="buttonSoot_Copy1" HorizontalAlignment="Left" Margin="84,30,0,0" VerticalAlignment="Top" Width="20" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" ToolTip="Remove Midi" Focusable="False" IsTabStop="False" Height="20" Click="OnRemoveMidi">
-            <Image Source="Resources/Icons/MidiRemove.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
-        </Button>
-        <Button x:Name="buttonSoot_Copy2" HorizontalAlignment="Left" Margin="59,30,0,0" VerticalAlignment="Top" Width="20" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" ToolTip="Add Midi" Focusable="False" IsTabStop="False" Height="20" Click="OnAddMidi">
-            <Image Source="Resources/Icons/MidiAdd.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
-        </Button>
+        <Rectangle Fill="#FFEEEEEE" HorizontalAlignment="Left" Margin="0,22,0,0" Width="192" StrokeThickness="0"/>
+        <Border BorderBrush="#FF886DB0" BorderThickness="0,0,1,0" HorizontalAlignment="Left" Margin="0,22,0,0" Width="192" Background="#FFEEEEEE">
+            <Grid Margin="0">
+                <Label Content="Midis" HorizontalAlignment="Left" Margin="10,5,0,0" VerticalAlignment="Top"/>
+                <ListBox x:Name="listMidis" Margin="10,31,10,10" SelectionChanged="OnMidiChanged"/>
+                <StackPanel Height="20" Margin="0,8,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" RenderTransformOrigin="0.5,0.5" Width="122" Orientation="Horizontal" FlowDirection="RightToLeft">
+                    <Button x:Name="buttonMoveMidiDown" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" Width="20" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" ToolTip="Move Midi Down" Focusable="False" IsTabStop="False" Height="20" Padding="0" Click="OnMoveMidiDown">
+                        <Image Source="Resources/Icons/MoveDown.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Button.Resources>
+                            <Style TargetType="Image">
+                                <Style.Triggers>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Opacity" Value="0.5" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button x:Name="buttonMoveMidiUp" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" ToolTip="Move Midi Up" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="2,0,0,0" Click="OnMoveMidiUp">
+                        <Image Source="Resources/Icons/MoveUp.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Button.Resources>
+                            <Style TargetType="Image">
+                                <Style.Triggers>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Opacity" Value="0.5" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button x:Name="buttonEditMidiName" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" ToolTip="Edit Midi Name" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="2,0,0,0" Click="OnEditMidiName">
+                        <Image Source="Resources/Icons/EditName.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Button.Resources>
+                            <Style TargetType="Image">
+                                <Style.Triggers>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Opacity" Value="0.5" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button x:Name="buttonRemoveMidi" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" ToolTip="Remove Midi" Focusable="False" IsTabStop="False" Height="20" Click="OnRemoveMidi" Padding="0" Margin="2,0,0,0">
+                        <Image Source="Resources/Icons/MidiRemove.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Button.Resources>
+                            <Style TargetType="Image">
+                                <Style.Triggers>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Opacity" Value="0.5" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" ToolTip="Add Midi" Focusable="False" IsTabStop="False" Height="20" Click="OnAddMidi" Padding="0" Margin="2,0,0,0">
+                        <Image Source="Resources/Icons/MidiAdd.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Button.Resources>
+                            <Style TargetType="Image">
+                                <Style.Triggers>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="Opacity" Value="0.5" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <TabControl x:Name="tabControl" Margin="197,27,5,5">
+            <TabItem Header="Playback">
+                <Grid Background="#FFF9F9F9">
+
+                    <local:ProjectileControl x:Name="projectileControl" Margin="0,0,10,10" ProjectilesChanged="OnProjectileChanged" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
+
+                    <Label Content="Use Time" HorizontalAlignment="Right" Margin="0,15,81,0" VerticalAlignment="Top"/>
+                    <local:NumericUpDown x:Name="numericUseTime" Margin="0,17,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="100" Minimum="3" Value="3" ErrorValue="12" ValueChanged="OnUseTimeChanged"/>
+                    <local:NumericUpDown x:Name="numericChecks" Margin="0,71,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="1000" Value="0" ValueChanged="OnChecksChanged"/>
+                    <CheckBox x:Name="checkBoxChecks" Content="Checks" HorizontalAlignment="Right" Margin="0,75,81,0" VerticalAlignment="Top" Click="OnChecksEnabledClicked" IsChecked="True" Padding="4,-1,5,0"/>
+                    <local:NumericUpDown x:Name="numericClickTime" Margin="0,44,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="100" Value="40" ValueChanged="OnClickTimeChanged" Minimum="18"/>
+                    <Label Content="Click Time" HorizontalAlignment="Right" Margin="0,42,76,0" VerticalAlignment="Top"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Midi Setup">
+                <Grid Background="#FFF9F9F9">
+                    <Label Content="Tracks" HorizontalAlignment="Left" Margin="10,5,0,0" VerticalAlignment="Top"/>
+                    <ListBox x:Name="listTracks" Margin="10,32,197,125" SelectionChanged="OnTrackChanged"/>
+                    <Separator Height="7" Margin="10,157,10,0" VerticalAlignment="Top"/>
+                    <Label x:Name="labelTotalNotes" Content="Total Notes: 0" HorizontalAlignment="Left" Margin="10,170,0,0" VerticalAlignment="Top"/>
+                    <Label x:Name="labelDuration" Content="Duration: 0:00" HorizontalAlignment="Left" Margin="10,196,0,0" VerticalAlignment="Top"/>
+                    <local:NumericUpDown x:Name="numericNoteOffset" Margin="0,170,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="11" Value="0" ValueChanged="OnNoteOffsetChanged" Minimum="-11"/>
+                    <Label Content="Note Offset" HorizontalAlignment="Right" Margin="0,168,81,0" VerticalAlignment="Top"/>
+                    <Label x:Name="labelNotes" Content="Notes: 0" HorizontalAlignment="Left" Margin="115,84,0,0" VerticalAlignment="Top"/>
+                    <Label x:Name="labelHighestNote" Content="Highest Note: C0" HorizontalAlignment="Left" Margin="115,32,0,0" VerticalAlignment="Top"/>
+                    <Label x:Name="labelLowestNote" Content="Lowest Note: C0" HorizontalAlignment="Left" Margin="115,58,0,0" VerticalAlignment="Top"/>
+                    <local:NumericUpDown x:Name="numericOctaveOffset" Margin="0,130,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="10" Value="0" ValueChanged="OnOctaveOffsetChanged" Minimum="-10"/>
+                    <Label Content="Octave Offset" HorizontalAlignment="Right" Margin="0,128,81,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="checkBoxTrackEnabled" Content="Enabled" HorizontalAlignment="Right" Margin="0,107,14,0" VerticalAlignment="Top" Click="OnTrackEnabledClicked" IsChecked="True" Padding="4,-1,5,0" RenderTransformOrigin="0.516,5.667"/>
+                    <local:NumericUpDown x:Name="numericSpeed" Margin="0,200,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="10000" Value="100" ValueChanged="OnSpeedChanged" Minimum="1"/>
+                    <Label Content="Speed (%)" HorizontalAlignment="Right" Margin="0,198,81,0" VerticalAlignment="Top"/>
+                    <local:KeybindReader x:Name="keybindReaderTrack" Margin="0,231,10,0" HorizontalAlignment="Right" KeybindChanged="OnMidiKeybindChanged"/>
+                    <Label Content="Keybind" HorizontalAlignment="Right" Margin="0,229,195,0" VerticalAlignment="Top"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
     </Grid>
 </Window>

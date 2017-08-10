@@ -7,12 +7,12 @@ using System.Windows;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("TerrariaMidiPlayer")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("Terraria Midi Player")]
+[assembly: AssemblyDescription("Terraria Midi Player - A midi player for Terrarian instruments")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Trigger's Tools & Games")]
 [assembly: AssemblyProduct("TerrariaMidiPlayer")]
-[assembly: AssemblyCopyright("Copyright ©  2017")]
+[assembly: AssemblyCopyright("Copyright © Robert Jordan 2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -51,5 +51,8 @@ using System.Windows;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("0.1.0.0")]
+[assembly: AssemblyFileVersion("0.1.0.0")]
+[assembly: Guid("868163E6-E0A0-4035-AA63-3042476FD242")]
+[assembly: NeutralResourcesLanguage("en-US")]
+

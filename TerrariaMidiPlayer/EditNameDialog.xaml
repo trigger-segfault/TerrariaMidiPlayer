@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TerrariaMidiPlayer"
         mc:Ignorable="d"
-        Title="Edit Name" Height="132.57" Width="300" Background="#FFEEEEEE" Icon="Resources/Icons/EditName.png" PreviewKeyDown="OnPreviewKeyDown">
+        Title="Edit Name" Height="132.57" Width="300" Background="#FFF9F9F9" Icon="Resources/Icons/EditName.png" PreviewKeyDown="OnPreviewKeyDown" WindowStartupLocation="CenterOwner">
     <Grid>
         <TextBox x:Name="textBox" Height="23" Margin="20,25,20,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
         <Button Content="Cancel" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" IsCancel="True"/>

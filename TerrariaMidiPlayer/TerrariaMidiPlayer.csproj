@@ -89,6 +89,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ChangeKeybindsDialog.xaml.cs">
+      <DependentUpon>ChangeKeybindsDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="EditNameDialog.xaml.cs">
       <DependentUpon>EditNameDialog.xaml</DependentUpon>
     </Compile>
@@ -110,6 +113,10 @@
     <Compile Include="TriggerMessageBox.xaml.cs">
       <DependentUpon>TriggerMessageBox.xaml</DependentUpon>
     </Compile>
+    <Page Include="ChangeKeybindsDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="EditNameDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

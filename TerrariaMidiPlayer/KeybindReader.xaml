@@ -8,7 +8,7 @@
              d:DesignHeight="300" HorizontalAlignment="Left" VerticalAlignment="Top" Height="22" Width="180" Focusable="True" Loaded="OnLoaded">
     <Grid>
         <Border Background="#FFEEEEEE" BorderBrush="#FF828790" BorderThickness="1" />
-        <ToggleButton x:Name="buttonKeybind" Content="unused" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Style="{StaticResource {x:Static ToolBar.ToggleButtonStyleKey}}" ToolTip="Edit Keybind" Focusable="False" IsTabStop="False" Padding="0" Click="OnButtonClicked"/>
+        <ToggleButton x:Name="buttonKeybind" Content="&lt;No Keybind&gt;" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Style="{StaticResource {x:Static ToolBar.ToggleButtonStyleKey}}" ToolTip="Edit Keybind" Focusable="False" IsTabStop="False" Padding="0" Click="OnButtonClicked"/>
     </Grid>
     <!--BorderBrush="#FF989EA5" BorderThickness="1" Background="#FFE8EAEC"-->
 </UserControl>

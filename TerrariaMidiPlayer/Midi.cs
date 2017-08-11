@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Sanford.Multimedia.Midi;
 using System.Windows.Input;
+using System.IO;
+using System.Security.Cryptography;
+using System.Xml;
 
 namespace TerrariaMidiPlayer {
 
@@ -16,8 +19,8 @@ namespace TerrariaMidiPlayer {
 		}
 
 		public class TrackSettings {
-			public bool Enabled { get; set; }
-			public int OctaveOffset { get; set; }
+			public bool Enabled;
+			public int OctaveOffset;
 
 			public TrackSettings() {
 				Enabled = true;
@@ -34,6 +37,7 @@ namespace TerrariaMidiPlayer {
 		private int noteOffset;
 		private int speed;
 		private Keybind keybind;
+		private DateTime lastModified;
 
 		public Midi() {
 			name = "";
@@ -44,6 +48,7 @@ namespace TerrariaMidiPlayer {
 			trackSettings = new List<TrackSettings>();
 			noteOffset = 0;
 			keybind = new Keybind();
+			lastModified = DateTime.MinValue;
 		}
 
 		public bool Load(string path) {
@@ -54,6 +59,8 @@ namespace TerrariaMidiPlayer {
 			noteOffset = 0;
 			speed = 100;
 			try {
+				lastModified = File.GetLastWriteTimeUtc(path);
+
 				sequence.Load(path);
 				this.path = path;
 				int index = 0;
@@ -106,6 +113,49 @@ namespace TerrariaMidiPlayer {
 			}
 			catch {
 				this.path = "";
+				return false;
+			}
+		}
+
+		public bool LoadConfig(XmlNode midiNode) {
+			try {
+				XmlElement element;
+				string path = "";
+				element = midiNode["FilePath"];
+				if (element != null) path = element.InnerText;
+				if (!System.IO.File.Exists(path))
+					return false;
+
+				Load(path);
+				element = midiNode["LastModifier"];
+				if (element != null) DateTime.TryParse(element.InnerText, out lastModified);
+
+				element = midiNode["Name"];
+				if (element != null) name = element.InnerText;
+
+				element = midiNode["NoteOffset"];
+				if (element != null) int.TryParse(element.InnerText, out noteOffset);
+
+				element = midiNode["Speed"];
+				if (element != null) int.TryParse(element.InnerText, out speed);
+
+				element = midiNode["Keybind"];
+				if (element != null) Keybind.TryParse(element.InnerText, out keybind);
+
+
+				element = midiNode["Tracks"];
+				if (element != null) {
+					XmlNodeList trackList = element.SelectNodes("/Track");
+					for (int j = 0; j < trackList.Count && tracks.Count == trackList.Count; j++) {
+						if (trackList[j].Attributes["Enabled"] != null)
+							bool.TryParse(trackList[j].Attributes["Enabled"].Value, out trackSettings[j].Enabled);
+						if (trackList[j].Attributes["OctaveOffset"] != null)
+							int.TryParse(trackList[j].Attributes["OctaveOffset"].Value, out trackSettings[j].OctaveOffset);
+					}
+				}
+				return true;
+			}
+			catch {
 				return false;
 			}
 		}
@@ -168,6 +218,10 @@ namespace TerrariaMidiPlayer {
 		public bool IsMessagePlayable(ChannelMessage message) {
 			return (message.Data2 > 0 && message.Command == ChannelCommand.NoteOn &&
 					GetTrackSettingsByChannel(message.MidiChannel).Enabled);
+		}
+
+		public DateTime LastModified {
+			get { return lastModified; }
 		}
 	}
 }

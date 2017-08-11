@@ -13,7 +13,7 @@
             <TextBlock  TextWrapping="WrapWithOverflow" Text="Unhandled Exception in Terraria Midi Player!" HorizontalAlignment="Left" VerticalAlignment="Top" Foreground="#FF952727" FontWeight="Bold"/>
         </Label>
         <Label HorizontalAlignment="Right" Margin="0,10,18,0" VerticalAlignment="Top" FontWeight="Bold">
-            <Hyperlink NavigateUri="https://github.com/trigger-death/TriggersNotepad" RequestNavigate="OnRequestNavigate">
+            <Hyperlink NavigateUri="https://github.com/trigger-death/TerrariaMidiPlayer" RequestNavigate="OnRequestNavigate">
                 <Run Text="Github Page"/>
             </Hyperlink>
         </Label>

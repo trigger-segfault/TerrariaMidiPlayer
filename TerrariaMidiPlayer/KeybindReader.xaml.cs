@@ -21,6 +21,11 @@ namespace TerrariaMidiPlayer {
 
 
 	public struct Keybind {
+
+		public static Keybind None {
+			get { return new Keybind(Key.None); }
+		}
+
 		public Key Key;
 		public ModifierKeys Modifiers;
 
@@ -41,6 +46,50 @@ namespace TerrariaMidiPlayer {
 			if (Modifiers.HasFlag(ModifierKeys.Alt))
 				mods |= Keys.Alt;
 			return (e.KeyCode == (Keys)KeyInterop.VirtualKeyFromKey(Key) && e.Modifiers == mods);
+		}
+
+		public static bool operator ==(Keybind a, Keybind b) {
+			return (a.Key == b.Key && (a.Modifiers == b.Modifiers || (a.Key == Key.None && b.Key == Key.None)));
+		}
+		public static bool operator !=(Keybind a, Keybind b) {
+			return (a.Key != b.Key || (a.Modifiers != b.Modifiers && (a.Key != Key.None || b.Key != Key.None)));
+		}
+
+		public override string ToString() {
+			string str = "";
+			if (Modifiers.HasFlag(ModifierKeys.Control))
+				str += "Ctrl+";
+			if (Modifiers.HasFlag(ModifierKeys.Shift))
+				str += "Shift+";
+			if (Modifiers.HasFlag(ModifierKeys.Alt))
+				str += "Alt+";
+			str += Key.ToString();
+			return str;
+		}
+
+		public static bool TryParse(string s, out Keybind keybind) {
+			Key key = Key.None;
+			ModifierKeys modifiers = ModifierKeys.None;
+			for (int i = 0; i < 3; i++) {
+				if (!modifiers.HasFlag(ModifierKeys.Control) && s.StartsWith("Ctrl+", StringComparison.InvariantCultureIgnoreCase)) {
+					modifiers |= ModifierKeys.Control;
+					s = s.Substring(5);
+				}
+				if (!modifiers.HasFlag(ModifierKeys.Shift) && s.StartsWith("Shift+", StringComparison.InvariantCultureIgnoreCase)) {
+					modifiers |= ModifierKeys.Shift;
+					s = s.Substring(6);
+				}
+				if (!modifiers.HasFlag(ModifierKeys.Alt) && s.StartsWith("Alt+", StringComparison.InvariantCultureIgnoreCase)) {
+					modifiers |= ModifierKeys.Alt;
+					s = s.Substring(4);
+				}
+			}
+			if (Enum.TryParse<Key>(s, out key)) {
+				keybind = new Keybind(key, modifiers);
+				return true;
+			}
+			keybind = Keybind.None;
+			return false;
 		}
 	}
 
@@ -163,7 +212,7 @@ namespace TerrariaMidiPlayer {
 				char mappedChar = Char.ToUpper(GetCharFromKey(key));
 				if (key >= Key.NumPad0 && key <= Key.NumPad9)
 					mappedChar = '\0';
-				if (mappedChar >= 32) {
+				if (mappedChar > 32) { // Yes, exclude space
 					displayString += mappedChar;
 				}
 				else if (key == Key.System) {

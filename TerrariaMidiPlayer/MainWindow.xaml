@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TerrariaMidiPlayer"
         mc:Ignorable="d"
-        Title="Terraria Midi Player" Height="366" Width="525" Closing="OnWindowClosing" Icon="App.ico" ResizeMode="CanMinimize" SnapsToDevicePixels="True" UseLayoutRounding="True" Loaded="OnLoaded" Background="#FFCFCCC8">
+        Title="Terraria Midi Player" Height="366" Width="525" Closing="OnClosing" Icon="App.ico" ResizeMode="CanMinimize" SnapsToDevicePixels="True" UseLayoutRounding="True" Loaded="OnLoaded" Background="#FFCFCCC8">
     <Window.Resources>
         <Style TargetType="ListBox">
             <Style.Resources>
@@ -36,19 +36,19 @@
                 </LinearGradientBrush>
             </Menu.Background>
             <MenuItem Header="File">
-                <MenuItem Header="Exit">
+                <MenuItem Header="Exit" Click="OnExit">
                     <MenuItem.Icon>
                         <Image Source="/TerrariaMidiPlayer;component/Resources/Icons/Exit.png" />
                     </MenuItem.Icon>
                 </MenuItem>
             </MenuItem>
             <MenuItem Header="Options">
-                <MenuItem Header="Overlay" IsChecked="True" IsCheckable="True">
+                <MenuItem Header="Overlay" IsChecked="True" IsCheckable="True" Visibility="Collapsed">
                     <MenuItem.Icon>
                         <Image Source="Resources/Icons/Overlay.png" />
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Keybinds...">
+                <MenuItem Header="Keybinds..." Click="OnChangeKeybinds">
                     <MenuItem.Icon>
                         <Image Source="Resources/Icons/Keybinds.png" />
                     </MenuItem.Icon>
@@ -56,27 +56,27 @@
             </MenuItem>
 
             <MenuItem Header="Help">
-                <MenuItem Header="About">
+                <MenuItem Header="About" Visibility="Collapsed">
                     <MenuItem.Icon>
                         <Image Source="/TerrariaMidiPlayer;component/Resources/Icons/About.png" />
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Credits">
+                <MenuItem Header="Credits" Visibility="Collapsed">
                     <MenuItem.Icon>
                         <Image Source="/TerrariaMidiPlayer;component/Resources/Icons/Credits.png" />
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Open Readme">
+                <MenuItem Header="Open Readme" Visibility="Collapsed">
                     <MenuItem.Icon>
                         <Image Source="/TerrariaMidiPlayer;component/Resources/Icons/Readme.png" />
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Open Changelog">
+                <MenuItem Header="Open Changelog" Visibility="Collapsed">
                     <MenuItem.Icon>
                         <Image Source="/TerrariaMidiPlayer;component/Resources/Icons/Changelog.png" />
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="View on GitHub">
+                <MenuItem Header="View on GitHub" Click="OnOpenOnGitHub">
                     <MenuItem.Icon>
                         <Image Source="/TerrariaMidiPlayer;component/Resources/Icons/Github.png" />
                     </MenuItem.Icon>
@@ -158,12 +158,14 @@
 
                     <local:ProjectileControl x:Name="projectileControl" Margin="0,0,10,10" ProjectilesChanged="OnProjectileChanged" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
 
-                    <Label Content="Use Time" HorizontalAlignment="Right" Margin="0,15,81,0" VerticalAlignment="Top"/>
+                    <Label Content="Use Time" HorizontalAlignment="Right" Margin="0,15,81,0" VerticalAlignment="Top" ToolTip="Instrument use time in frames"/>
                     <local:NumericUpDown x:Name="numericUseTime" Margin="0,17,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="100" Minimum="3" Value="3" ErrorValue="12" ValueChanged="OnUseTimeChanged"/>
                     <local:NumericUpDown x:Name="numericChecks" Margin="0,71,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="1000" Value="0" ValueChanged="OnChecksChanged"/>
-                    <CheckBox x:Name="checkBoxChecks" Content="Checks" HorizontalAlignment="Right" Margin="0,75,81,0" VerticalAlignment="Top" Click="OnChecksEnabledClicked" IsChecked="True" Padding="4,-1,5,0"/>
+                    <CheckBox x:Name="checkBoxChecks" Content="Checks" HorizontalAlignment="Right" Margin="0,75,81,0" VerticalAlignment="Top" Click="OnChecksEnabledClicked" IsChecked="True" Padding="4,-1,5,0" ToolTip="Checks to make sure Terraria is the active window when playing a song. The higher the number, the more notes will pass before it checks again."/>
                     <local:NumericUpDown x:Name="numericClickTime" Margin="0,44,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="100" Value="40" ValueChanged="OnClickTimeChanged" Minimum="18"/>
-                    <Label Content="Click Time" HorizontalAlignment="Right" Margin="0,42,76,0" VerticalAlignment="Top"/>
+                    <Label Content="Click Time" HorizontalAlignment="Right" Margin="0,42,81,0" VerticalAlignment="Top" ToolTip="The duration the mouse is held down for in milliseconds"/>
+                    <ComboBox x:Name="comboBoxMount" HorizontalAlignment="Right" Margin="0,107,10,0" VerticalAlignment="Top" Width="100" SelectionChanged="OnMountChanged"/>
+                    <Label Content="Mount" HorizontalAlignment="Right" Margin="0,105,115,0" VerticalAlignment="Top" ToolTip="Needed to calculate the center of the player."/>
                 </Grid>
             </TabItem>
             <TabItem Header="Midi Setup">
@@ -171,8 +173,8 @@
                     <Label Content="Tracks" HorizontalAlignment="Left" Margin="10,5,0,0" VerticalAlignment="Top"/>
                     <ListBox x:Name="listTracks" Margin="10,32,197,125" SelectionChanged="OnTrackChanged"/>
                     <Separator Height="7" Margin="10,157,10,0" VerticalAlignment="Top"/>
-                    <Label x:Name="labelTotalNotes" Content="Total Notes: 0" HorizontalAlignment="Left" Margin="10,170,0,0" VerticalAlignment="Top"/>
-                    <Label x:Name="labelDuration" Content="Duration: 0:00" HorizontalAlignment="Left" Margin="10,196,0,0" VerticalAlignment="Top"/>
+                    <Label x:Name="labelTotalNotes" Content="Total Notes:" HorizontalAlignment="Left" Margin="10,198,0,0" VerticalAlignment="Top"/>
+                    <Label x:Name="labelDuration" Content="Duration: 0:00" HorizontalAlignment="Left" Margin="10,196,0,0" VerticalAlignment="Top" Visibility="Hidden"/>
                     <local:NumericUpDown x:Name="numericNoteOffset" Margin="0,170,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="11" Value="0" ValueChanged="OnNoteOffsetChanged" Minimum="-11"/>
                     <Label Content="Note Offset" HorizontalAlignment="Right" Margin="0,168,81,0" VerticalAlignment="Top"/>
                     <Label x:Name="labelNotes" Content="Notes: 0" HorizontalAlignment="Left" Margin="115,84,0,0" VerticalAlignment="Top"/>
@@ -183,8 +185,9 @@
                     <CheckBox x:Name="checkBoxTrackEnabled" Content="Enabled" HorizontalAlignment="Right" Margin="0,107,14,0" VerticalAlignment="Top" Click="OnTrackEnabledClicked" IsChecked="True" Padding="4,-1,5,0" RenderTransformOrigin="0.516,5.667"/>
                     <local:NumericUpDown x:Name="numericSpeed" Margin="0,200,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="10000" Value="100" ValueChanged="OnSpeedChanged" Minimum="1"/>
                     <Label Content="Speed (%)" HorizontalAlignment="Right" Margin="0,198,81,0" VerticalAlignment="Top"/>
-                    <local:KeybindReader x:Name="keybindReaderTrack" Margin="0,231,10,0" HorizontalAlignment="Right" KeybindChanged="OnMidiKeybindChanged"/>
+                    <local:KeybindReader x:Name="keybindReaderMidi" Margin="0,231,10,0" HorizontalAlignment="Right" KeybindChanged="OnMidiKeybindChanged"/>
                     <Label Content="Keybind" HorizontalAlignment="Right" Margin="0,229,195,0" VerticalAlignment="Top"/>
+                    <Label Content="Midi" HorizontalAlignment="Left" Margin="10,168,0,0" VerticalAlignment="Top"/>
                 </Grid>
             </TabItem>
         </TabControl>

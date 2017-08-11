@@ -20,6 +20,9 @@ using Timer = System.Timers.Timer;
 using Keys = System.Windows.Forms.Keys;
 using Sanford.Multimedia.Midi;
 using Microsoft.Win32;
+using System.Xml;
+using System.Reflection;
+using System.Globalization;
 
 namespace TerrariaMidiPlayer {
 
@@ -27,37 +30,60 @@ namespace TerrariaMidiPlayer {
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
 	public partial class MainWindow : Window {
-		Stopwatch watch;
+		public struct Mount {
+			public string Name;
+			public int Offset;
+
+			public Mount(string name, int offset) {
+				Name = name;
+				Offset = offset;
+			}
+		}
+
+		Stopwatch watch = new Stopwatch();
 		IKeyboardMouseEvents globalHook;
-		Random rand;
-		int useTime;
+		Random rand = new Random();
+		int useTime = 3;
 		Song song;
 
-		Midi midi;
+		Midi midi = null;
 		Sequencer sequencer;
 
-		Rect clientArea;
+		Rect clientArea = new Rect(0, 0, 0, 0);
 
-		double projectileAngle;
-		double projectileRange;
+		double projectileAngle = 0;
+		double projectileRange = 360;
 
-		Keys playKey;
-		Keys pauseKey;
-		Keys stopKey;
-		Keys closeKey;
+		Keybind keybindPlay = new Keybind(Key.NumPad0);
+		Keybind keybindPause = new Keybind(Key.NumPad1);
+		Keybind keybindStop = new Keybind(Key.NumPad2);
+		Keybind keybindClose = new Keybind(Key.Escape);
 
-		int mount;
+		int mount = 0;
 
-		bool checksEnabled;
-		int checkFrequency;
-		int checkCount;
+		bool checksEnabled = true;
+		int checkFrequency = 0;
+		int checkCount = 0;
+		
+		static readonly Mount[] Mounts = {
+			new Mount("No Mount", 0),
+			new Mount("Bunny", 17),
+			new Mount("Slime", 15),
+			new Mount("Bee", 12),
+			new Mount("Turtle", 20),
+			new Mount("Basilisk", 6),
+			new Mount("Unicorn", 27),
+			new Mount("Reindeer", 13),
+			new Mount("Pigron", 15),
+			new Mount("Fishron", 11),
+			new Mount("Scutlix", 12),
+			new Mount("UFO", 12)
+		};
 
-		static readonly int[] MountHeights = { 0 };
-
-		List<Midi> midis;
+		List<Midi> midis = new List<Midi>();
 		bool loaded = false;
 
-		int clickTime;
+		int clickTime = 40;
 
 		public MainWindow() {
 			
@@ -79,17 +105,19 @@ namespace TerrariaMidiPlayer {
 			projectileAngle = 0;
 			projectileRange = 360;
 
-			closeKey = Keys.Escape;
-			playKey = Keys.NumPad0;
-			pauseKey = Keys.NumPad1;
-			stopKey = Keys.NumPad2;
-
 			checksEnabled = true;
 			checkFrequency = 0;
 			checkCount = 0;
 			clickTime = 40;
 
 			mount = 0;
+
+			for (int i = 0; i < Mounts.Length; i++) {
+				comboBoxMount.Items.Add(Mounts[i].Name);
+			}
+			comboBoxMount.SelectedIndex = 0;
+
+			LoadConfig();
 
 			UpdateMidi();
 
@@ -142,29 +170,282 @@ namespace TerrariaMidiPlayer {
 			#endregion
 		}
 
+		#region Quick n' Easy Propertiesies
+		public static string ApplicationDirectory {
+			get { return System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location); }
+		}
+		public static string ConfigPath {
+			get { return System.IO.Path.Combine(ApplicationDirectory, "Config.xml"); }
+		}
+		#endregion
+
+		#region Config
+		private bool LoadConfig() {
+			if (System.IO.File.Exists(ConfigPath)) {
+				try {
+					XmlNode node;
+					XmlElement element;
+					XmlAttribute attribute;
+					XmlDocument doc = new XmlDocument();
+					doc.Load(ConfigPath);
+
+					int version = 0;
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Version");
+					if (node != null && !int.TryParse(node.InnerText, out version))
+						return false;
+
+					#region Settings
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/UseTime");
+					if (node != null) int.TryParse(node.InnerText, out useTime);
+					numericUseTime.Value = useTime;
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/ClickTime");
+					if (node != null) int.TryParse(node.InnerText, out clickTime);
+					numericClickTime.Value = clickTime;
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/ChecksEnabled");
+					if (node != null) bool.TryParse(node.InnerText, out checksEnabled);
+					checkBoxChecks.IsChecked = checksEnabled;
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/CheckFrequency");
+					if (node != null) int.TryParse(node.InnerText, out checkFrequency);
+					numericChecks.Value = checkFrequency;
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Mount");
+					if (node != null) {
+						for (int i = 0; i < Mounts.Length; i++) {
+							if (string.Compare(node.InnerText, Mounts[i].Name, true) == 0) {
+								mount = i;
+								comboBoxMount.SelectedIndex = i;
+								break;
+							}
+						}
+					}
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/ProjectileAngle");
+					if (node != null) double.TryParse(node.InnerText, out projectileAngle);
+					projectileControl.Angle = (int)projectileAngle;
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/ProjectileRange");
+					if (node != null) double.TryParse(node.InnerText, out projectileRange);
+					projectileControl.Range = (int)projectileRange;
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/KeybindPlay");
+					if (node != null) Keybind.TryParse(node.InnerText, out keybindPlay);
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/KeybindPause");
+					if (node != null) Keybind.TryParse(node.InnerText, out keybindPause);
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/KeybindStop");
+					if (node != null) Keybind.TryParse(node.InnerText, out keybindStop);
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/KeybindClose");
+					if (node != null) Keybind.TryParse(node.InnerText, out keybindClose);
+					#endregion
+
+					#region Midis
+					XmlNodeList midiList = doc.SelectNodes("/TerrariaMidiPlayer/Midis/Midi");
+					for (int i = 0; i < midiList.Count; i++) {
+						Midi midi = new Midi();
+						if (midi.LoadConfig(midiList[i])) {
+							midis.Add(midi);
+							listMidis.Items.Add(midi.ProperName);
+						}
+					}
+
+					if (midis.Count > 0) {
+						listMidis.SelectedIndex = 0;
+						this.midi = midis[0];
+					}
+					#endregion
+					return true;
+				}
+				catch (Exception ex) {
+					MessageBoxResult result = TriggerMessageBox.Show(this, MessageIcon.Error, "Error while trying to load config. Would you like to see the error?", "Load Error", MessageBoxButton.YesNo);
+					if (result == MessageBoxResult.Yes)
+						ErrorMessageBox.Show(ex);
+					return false;
+				}
+			}
+			else {
+				SaveConfig();
+				return true;
+			}
+		}
+		
+		private bool SaveConfig(bool silent = false) {
+			try {
+				XmlElement element;
+				XmlAttribute attribute;
+				XmlDocument doc = new XmlDocument();
+				doc.AppendChild(doc.CreateXmlDeclaration("1.0", "UTF-8", null));
+
+				XmlElement midiPlayer = doc.CreateElement("TerrariaMidiPlayer");
+				doc.AppendChild(midiPlayer);
+
+				XmlElement version = doc.CreateElement("Version");
+				version.AppendChild(doc.CreateTextNode("1"));
+				midiPlayer.AppendChild(version);
+
+				#region Settings
+				XmlElement setting = doc.CreateElement("Settings");
+				midiPlayer.AppendChild(setting);
+
+				element = doc.CreateElement("UseTime");
+				element.AppendChild(doc.CreateTextNode(useTime.ToString()));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("ClickTime");
+				element.AppendChild(doc.CreateTextNode(clickTime.ToString()));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("ChecksEnabled");
+				element.AppendChild(doc.CreateTextNode(checksEnabled.ToString()));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("CheckFrequency");
+				element.AppendChild(doc.CreateTextNode(checkFrequency.ToString()));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("Mount");
+				element.AppendChild(doc.CreateTextNode(Mounts[mount].Name));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("ProjectileAngle");
+				element.AppendChild(doc.CreateTextNode(projectileAngle.ToString()));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("ProjectileRange");
+				element.AppendChild(doc.CreateTextNode(projectileRange.ToString()));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("KeybindPlay");
+				element.AppendChild(doc.CreateTextNode(keybindPlay.ToString()));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("KeybindPause");
+				element.AppendChild(doc.CreateTextNode(keybindPause.ToString()));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("KeybindStop");
+				element.AppendChild(doc.CreateTextNode(keybindStop.ToString()));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("KeybindClose");
+				element.AppendChild(doc.CreateTextNode(keybindClose.ToString()));
+				setting.AppendChild(element);
+				#endregion
+
+				#region Midis
+				XmlElement midis = doc.CreateElement("Midis");
+				midiPlayer.AppendChild(midis);
+
+				foreach (Midi midi in this.midis) {
+					XmlElement midiElement = doc.CreateElement("Midi");
+					midis.AppendChild(midiElement);
+
+					element = doc.CreateElement("FilePath");
+					element.AppendChild(doc.CreateTextNode(midi.Path));
+					midiElement.AppendChild(element);
+
+					element = doc.CreateElement("LastModified");
+					element.AppendChild(doc.CreateTextNode(midi.LastModified.ToString()));
+					midiElement.AppendChild(element);
+
+					element = doc.CreateElement("Name");
+					element.AppendChild(doc.CreateTextNode(midi.Name));
+					midiElement.AppendChild(element);
+
+					element = doc.CreateElement("NoteOffset");
+					element.AppendChild(doc.CreateTextNode(midi.NoteOffset.ToString()));
+					midiElement.AppendChild(element);
+
+					element = doc.CreateElement("Speed");
+					element.AppendChild(doc.CreateTextNode(midi.Speed.ToString()));
+					midiElement.AppendChild(element);
+
+					element = doc.CreateElement("Keybind");
+					element.AppendChild(doc.CreateTextNode(midi.Keybind.ToString()));
+					midiElement.AppendChild(element);
+
+					XmlElement tracks = doc.CreateElement("Tracks");
+					midiElement.AppendChild(tracks);
+
+					for (int i = 0; i < midi.TrackCount; i++) {
+						Midi.TrackSettings trackSettings = midi.GetTrackSettings(i);
+						XmlElement track = doc.CreateElement("Track");
+						tracks.AppendChild(track);
+						
+						track.SetAttribute("Enabled", trackSettings.Enabled.ToString());
+						track.SetAttribute("OctaveOffset", trackSettings.OctaveOffset.ToString());
+					}
+				}
+
+				#endregion
+
+				doc.Save(ConfigPath);
+				return true;
+			}
+			catch (Exception ex) {
+				if (!silent) {
+					MessageBoxResult result = TriggerMessageBox.Show(this, MessageIcon.Error, "Error while trying to save config. Would you like to see the error?", "Save Error", MessageBoxButton.YesNo);
+					if (result == MessageBoxResult.Yes)
+						ErrorMessageBox.Show(ex);
+				}
+				return false;
+			}
+		}
+		#endregion
+
+		#region Window Events
 		private void OnLoaded(object sender, RoutedEventArgs e) {
 			loaded = true;
 		}
 
-		private void PlaySemitone(int semitone, double direction) {
-			double heightRatio = clientArea.Height / 48.0;
-			while (semitone < 0)
-				semitone += 12;
-			while (semitone > 24)
-				semitone -= 12;
-			double centerx = clientArea.Width / 2;
-			double centery = clientArea.Height / 2 - MountHeights[mount];
-			int x = (int)(centerx + Math.Cos(direction) * (heightRatio * semitone + 2));
-			int y = (int)(centery + Math.Sin(direction) * (heightRatio * semitone + 2));
-			if (x < 0) x = 0;
-			if (x >= (int)clientArea.Width) x = (int)clientArea.Width - 1;
-			if (y < 0) y = 0;
-			if (y >= (int)clientArea.Height) y = (int)clientArea.Height - 1;
-			x += (int)clientArea.X;
-			y += (int)clientArea.Y;
-			MouseControl.SimulateClick(x, y, clickTime);
+		private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
+			globalHook.KeyDown -= OnGlobalKeyDown;
+			globalHook.Dispose();
+			globalHook = null;
+			watch.Stop();
+			sequencer.Stop();
+			SaveConfig(true);
 		}
 
+		private void OnGlobalKeyDown(object sender, System.Windows.Forms.KeyEventArgs e) {
+			if (!loaded || keybindReaderMidi.IsReading)
+				return;
+
+			if (midi != null) {
+				if (keybindPlay.IsDown(e)) {
+					Play();
+				}
+				else if (keybindPause.IsDown(e)) {
+					Pause();
+				}
+				else if (keybindStop.IsDown(e)) {
+					Stop();
+				}
+			}
+			for (int i = 0; i < midis.Count; i++) {
+				if (midis[i].Keybind.IsDown(e)) {
+					Stop();
+
+					loaded = false;
+					listMidis.SelectedIndex = i;
+					loaded = true;
+					midi = midis[listMidis.SelectedIndex];
+					sequencer.Sequence = midi.Sequence;
+
+					UpdateMidi();
+				}
+			}
+			if (keybindClose.IsDown(e)) {
+				Close();
+			}
+		}
+		#endregion
+
+		#region Midi Playing
 		private void OnPlayingCompleted(object sender, EventArgs e) {
 			Stop();
 		}
@@ -188,51 +469,30 @@ namespace TerrariaMidiPlayer {
 					}
 				}
 				int note = e.Message.Data1 - 12 * (midi.GetTrackSettingsByChannel(e.Message.MidiChannel).OctaveOffset + 1) + midi.NoteOffset;
-				PlaySemitone(note, (projectileAngle - projectileRange / 2 + rand.NextDouble() * projectileRange + 270) / 360.0 * Math.PI * 2.0);
 				watch.Restart();
+				PlaySemitone(note, (projectileAngle - projectileRange / 2 + rand.NextDouble() * projectileRange + 270) / 360.0 * Math.PI * 2.0);
 			}
 		}
 
-		private void OnGlobalKeyDown(object sender, System.Windows.Forms.KeyEventArgs e) {
-			if (!loaded || keybindReaderTrack.IsReading)
-				return;
-
-			if (midi != null) {
-				if (e.KeyCode == playKey) {
-					Play();
-				}
-				else if (e.KeyCode == pauseKey) {
-					Pause();
-				}
-				else if (e.KeyCode == stopKey) {
-					Stop();
-				}
-			}
-			for (int i = 0; i < midis.Count; i++) {
-				if (midis[i].Keybind.IsDown(e)) {
-					Stop();
-					
-					loaded = false;
-					listMidis.SelectedIndex = i;
-					loaded = true;
-					midi = midis[listMidis.SelectedIndex];
-					sequencer.Sequence = midi.Sequence;
-
-					UpdateMidi();
-				}
-			}
-			if (e.KeyCode == closeKey) {
-				Close();
-			}
+		private void PlaySemitone(int semitone, double direction) {
+			double heightRatio = clientArea.Height / 48.0;
+			while (semitone < 0)
+				semitone += 12;
+			while (semitone > 24)
+				semitone -= 12;
+			double centerx = clientArea.Width / 2;
+			double centery = clientArea.Height / 2 - Mounts[mount].Offset;
+			int x = (int)(centerx + Math.Cos(direction) * (heightRatio * semitone + 2));
+			int y = (int)(centery + Math.Sin(direction) * (heightRatio * semitone + 2));
+			if (x < 0) x = 0;
+			if (x >= (int)clientArea.Width) x = (int)clientArea.Width - 1;
+			if (y < 0) y = 0;
+			if (y >= (int)clientArea.Height) y = (int)clientArea.Height - 1;
+			x += (int)clientArea.X;
+			y += (int)clientArea.Y;
+			MouseControl.SimulateClick(x, y, clickTime);
 		}
-
-		private void OnWindowClosing(object sender, System.ComponentModel.CancelEventArgs e) {
-			globalHook.KeyDown -= OnGlobalKeyDown;
-			globalHook.Dispose();
-			globalHook = null;
-			watch.Stop();
-			sequencer.Stop();
-		}
+		#endregion
 
 		#region Songs
 		#region ShippingIntro
@@ -658,18 +918,47 @@ namespace TerrariaMidiPlayer {
 
 		#endregion
 
-		private void OnProjectileChanged(object sender, RoutedEventArgs e) {
-			projectileAngle = projectileControl.Angle;
-			projectileRange = projectileControl.Range;
-		}
-
+		#region Playback Tab Events
 		private void OnUseTimeChanged(object sender, RoutedEventArgs e) {
 			if (!loaded)
 				return;
 
 			useTime = numericUseTime.Value;
 		}
-		
+
+		private void OnChecksChanged(object sender, RoutedEventArgs e) {
+			checkFrequency = numericChecks.Value;
+		}
+
+		private void OnChecksEnabledClicked(object sender, RoutedEventArgs e) {
+			if (!loaded)
+				return;
+
+			checksEnabled = checkBoxChecks.IsChecked.Value;
+			numericChecks.IsEnabled = checksEnabled;
+		}
+
+		private void OnClickTimeChanged(object sender, RoutedEventArgs e) {
+			if (!loaded)
+				return;
+
+			clickTime = numericClickTime.Value;
+		}
+
+		private void OnMountChanged(object sender, SelectionChangedEventArgs e) {
+			if (!loaded)
+				return;
+
+			mount = comboBoxMount.SelectedIndex;
+		}
+
+		private void OnProjectileChanged(object sender, RoutedEventArgs e) {
+			projectileAngle = projectileControl.Angle;
+			projectileRange = projectileControl.Range;
+		}
+		#endregion
+
+		#region Midi Playing
 		private void Play() {
 			if (midi != null) {
 				TerrariaWindowLocator.Update();
@@ -698,7 +987,9 @@ namespace TerrariaMidiPlayer {
 			sequencer.Stop();
 			sequencer.Position = 0;
 		}
+		#endregion
 
+		#region Midi List Events
 		private void OnMidiChanged(object sender, SelectionChangedEventArgs e) {
 			if (!loaded)
 				return;
@@ -813,32 +1104,20 @@ namespace TerrariaMidiPlayer {
 				UpdateMidiButtons();
 			}
 		}
+		#endregion
 
-		private void OnChecksChanged(object sender, RoutedEventArgs e) {
-			checkFrequency = numericChecks.Value;
-		}
-
-		private void OnChecksEnabledClicked(object sender, RoutedEventArgs e) {
+		#region Midi Setup Tab Events
+		private void OnTrackChanged(object sender, SelectionChangedEventArgs e) {
 			if (!loaded)
 				return;
 
-			checksEnabled = checkBoxChecks.IsChecked.Value;
-			numericChecks.IsEnabled = checksEnabled;
-		}
-
-		private void OnNoteOffsetChanged(object sender, RoutedEventArgs e) {
-			if (!loaded)
-				return;
-
-			midi.NoteOffset = numericNoteOffset.Value;
-			labelHighestNote.Content = "Highest Note: " + NoteToString(midi.GetTrack(listTracks.SelectedIndex).HighestNote + midi.NoteOffset);
-			labelLowestNote.Content = "Lowest Note: " + NoteToString(midi.GetTrack(listTracks.SelectedIndex).LowestNote + midi.NoteOffset);
+			UpdateTrack();
 		}
 
 		private void OnTrackEnabledClicked(object sender, RoutedEventArgs e) {
 			if (!loaded)
 				return;
-			
+
 			int index = listTracks.SelectedIndex;
 			midi.GetTrackSettings(index).Enabled = checkBoxTrackEnabled.IsChecked.Value;
 
@@ -849,9 +1128,10 @@ namespace TerrariaMidiPlayer {
 			if (!midi.GetTrackSettings(index).Enabled)
 				item.Foreground = Brushes.Gray;
 			listTracks.Items.Insert(index, item);
+			listTracks.SelectedIndex = index;
 			loaded = true;
 		}
-
+		
 		private void OnOctaveOffsetChanged(object sender, RoutedEventArgs e) {
 			if (!loaded)
 				return;
@@ -859,11 +1139,13 @@ namespace TerrariaMidiPlayer {
 			midi.GetTrackSettings(listTracks.SelectedIndex).OctaveOffset = numericOctaveOffset.Value;
 		}
 
-		private void OnTrackChanged(object sender, SelectionChangedEventArgs e) {
+		private void OnNoteOffsetChanged(object sender, RoutedEventArgs e) {
 			if (!loaded)
 				return;
 
-			UpdateTrack();
+			midi.NoteOffset = numericNoteOffset.Value;
+			labelHighestNote.Content = "Highest Note: " + NoteToString(midi.GetTrack(listTracks.SelectedIndex).HighestNote + midi.NoteOffset);
+			labelLowestNote.Content = "Lowest Note: " + NoteToString(midi.GetTrack(listTracks.SelectedIndex).LowestNote + midi.NoteOffset);
 		}
 
 		private void OnSpeedChanged(object sender, RoutedEventArgs e) {
@@ -878,16 +1160,38 @@ namespace TerrariaMidiPlayer {
 			if (!loaded)
 				return;
 
-			midi.Keybind = keybindReaderTrack.Keybind;
+			Keybind previous = midi.Keybind;
+			Keybind newBind = keybindReaderMidi.Keybind;
+			string name = "";
+			if (newBind != Keybind.None) {
+				if (newBind == keybindPlay)
+					name = "Play Midi";
+				else if (newBind == keybindPause)
+					name = "Pause Midi";
+				else if (newBind == keybindStop)
+					name = "Stop Midi";
+				else if (newBind == keybindClose)
+					name = "Close Window";
+				else {
+					for (int i = 0; i < midis.Count; i++) {
+						if (midis[i] != midi && newBind == midis[i].Keybind) {
+							name = midis[i].ProperName;
+							break;
+						}
+					}
+				}
+			}
+			if (name == "") {
+				midi.Keybind = newBind;
+			}
+			else {
+				TriggerMessageBox.Show(this, MessageIcon.Error, "Keybind is already in use by the '" + name + "' keybind!", "Keybind in Use");
+				keybindReaderMidi.Keybind = previous;
+			}
 		}
+		#endregion
 
-		private void OnClickTimeChanged(object sender, RoutedEventArgs e) {
-			if (!loaded)
-				return;
-
-			clickTime = numericClickTime.Value;
-		}
-
+		#region Updating
 		public void UpdateMidi() {
 			loaded = false;
 			listTracks.Items.Clear();
@@ -895,13 +1199,13 @@ namespace TerrariaMidiPlayer {
 			if (midi != null) {
 				loaded = false;
 				labelTotalNotes.Content = "Total Notes: " + midi.TotalNotes;
-				labelDuration.Content = "Duration: " + MillisecondsToString(sequencer.Duration);
-				keybindReaderTrack.Keybind = midi.Keybind;
+				//labelDuration.Content = "Duration: " + MillisecondsToString(sequencer.Duration);
+				keybindReaderMidi.Keybind = midi.Keybind;
 				numericNoteOffset.IsEnabled = true;
 				numericSpeed.IsEnabled = true;
 				numericNoteOffset.Value = midi.NoteOffset;
 				numericSpeed.Value = midi.Speed;
-				keybindReaderTrack.IsEnabled = true;
+				keybindReaderMidi.IsEnabled = true;
 				if (midi.TrackCount > 0) {
 					for (int i = 0; i < midi.TrackCount; i++) {
 						ListBoxItem item = new ListBoxItem();
@@ -921,7 +1225,7 @@ namespace TerrariaMidiPlayer {
 				numericNoteOffset.IsEnabled = false;
 				numericSpeed.IsEnabled = false;
 				listTracks.IsEnabled = false;
-				keybindReaderTrack.IsEnabled = false;
+				keybindReaderMidi.IsEnabled = false;
 			}
 			UpdateTrack();
 			UpdateMidiButtons();
@@ -952,7 +1256,9 @@ namespace TerrariaMidiPlayer {
 			buttonMoveMidiUp.IsEnabled = (listMidis.SelectedIndex > 0);
 			buttonMoveMidiDown.IsEnabled = (listMidis.SelectedIndex != -1 && listMidis.SelectedIndex + 1 < listMidis.Items.Count);
 		}
+		#endregion
 
+		#region Helpers
 		private string NoteToString(int note) {
 			string[] notes = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
 			string[] altNotes = { "", "D\u266D", "", "E\u266D", "", "", "G\u266D", "", "A\u266D", "", "B\u266D", "" };
@@ -986,6 +1292,21 @@ namespace TerrariaMidiPlayer {
 				timeStr += "." + ms.ToString();
 			}
 			return timeStr;
+		}
+		#endregion
+
+		#region Menu Item Events
+		private void OnChangeKeybinds(object sender, RoutedEventArgs e) {
+			ChangeKeybindsDialog.ShowDialog(this, ref keybindPlay, ref keybindPause, ref keybindStop, ref keybindClose);
+		}
+
+		private void OnExit(object sender, RoutedEventArgs e) {
+			Close();
+		}
+		#endregion
+
+		private void OnOpenOnGitHub(object sender, RoutedEventArgs e) {
+			Process.Start("https://github.com/trigger-death/TerrariaMidiPlayer");
 		}
 	}
 }

@@ -1,8 +1,9 @@
 # Terraria Midi Player ![AppIcon](http://i.imgur.com/a6EWzOg.png)
 A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi Player works by taking control of the mouse to click on the screen at the right coordinates to produce the correct notes as the midi plays. The program comes with a set of global hotkeys that can be pressed while focused on Terraria to force-stop the song or close Terraria Midi Player. The program will also force focus on Terraria when you start the song to avoid causing problems by clicking in unknown places.
 
-
 ![Window Preview](http://i.imgur.com/DBoXmF4.png)
+
+### [Wiki](https://github.com/trigger-death/TerrariaMidiPlayer/wiki) | [Credits](https://github.com/trigger-death/TerrariaMidiPlayer/wiki/Credits)
 
 ## Requirements for Running
 * .NET Framwork 4.5.2 | [Offline Installer](https://www.microsoft.com/en-us/download/details.aspx?id=42642) | [Web Installer](https://www.microsoft.com/en-us/download/details.aspx?id=42643)

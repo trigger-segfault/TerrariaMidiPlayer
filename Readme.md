@@ -7,7 +7,7 @@ A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi
 ## Requirements for Running
 * .NET Framwork 4.5.2 | [Offline Installer](https://www.microsoft.com/en-us/download/details.aspx?id=42642) | [Web Installer](https://www.microsoft.com/en-us/download/details.aspx?id=42643)
 * Windows 7 or later
-* Terraria for PC *(will not play midis when it's not running)*
+* Terraria for PC <sup>(will not play midis when it's not running)</sup>
 
 ## Features
 * Automatically attempts to fit notes within Terraria's two octaves.
@@ -30,10 +30,10 @@ A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi
 
 ## Default Keybinds
 * Force Close: `Escape`
-* Play Midi: `Numpad 0` (Delete, when no numpad is present)
-* Pause Midi: `Numpad 1` (End, when no numpad is present)
-* Stop Midi: `Numpad 2` (Page Down, when no numpad is present)
-* Toggle Mount Adjustment: `R` (Only when focused on Terraria)
+* Play Midi: `Numpad 0` <sup>(<code>Delete</code>, when no numpad is present)</sup
+* Pause Midi: `Numpad 1` <sup>(<code>End</code>, when no numpad is present)</sup
+* Stop Midi: `Numpad 2` <sup>(<code>Page Down</code>, when no numpad is present)</sup
+* Toggle Mount Adjustment: `R` <sup>(Only when focused on Terraria)</sup
 
 ## Youtube Previews
 Below are some of the videos that have been recorded during the developement process of Terraria Midi Player.

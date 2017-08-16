@@ -33,7 +33,7 @@ A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi
 * Play Midi: `Numpad 0` <sup>(<code>Delete</code>, when no numpad is present)</sup>
 * Pause Midi: `Numpad 1` <sup>(<code>End</code>, when no numpad is present)</sup>
 * Stop Midi: `Numpad 2` <sup>(<code>Page Down</code>, when no numpad is present)</sup>
-* Toggle Mount Adjustment: `R` <sup>(Only when focused on Terraria)</sup>
+* Toggle Mount Offset: `R` <sup>(Only when focused on Terraria)</sup>
 
 ## Youtube Previews
 Below are some of the videos that have been recorded during the developement process of Terraria Midi Player.

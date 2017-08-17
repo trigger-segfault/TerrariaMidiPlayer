@@ -6,11 +6,13 @@ namespace Sanford.Multimedia.Midi
 {
     public class ChannelMessageEventArgs : EventArgs
     {
+		private Track track;
         private ChannelMessage message;
 
-        public ChannelMessageEventArgs(ChannelMessage message)
+        public ChannelMessageEventArgs(Track track, ChannelMessage message)
         {
-            this.message = message;
+			this.track = track;
+			this.message = message;
         }
 
         public ChannelMessage Message
@@ -20,5 +22,9 @@ namespace Sanford.Multimedia.Midi
                 return message;
             }
         }
+
+		public Track Track {
+			get { return track; }
+		}
     }
 }

@@ -81,7 +81,7 @@ namespace Sanford.Multimedia.Midi
         // Indicates whether the clock is running.
         protected bool running = false;
 
-		private double altTempo = 1.0;
+		private double speed = 1.0;
 
 		#endregion
 
@@ -136,8 +136,8 @@ namespace Sanford.Multimedia.Midi
 
         protected int GenerateTicks()
         {
-            int ticks = (fractionalTicks + periodResolution) / (int)(tempo * altTempo);
-            fractionalTicks += periodResolution - ticks * (int)(tempo * altTempo);
+            int ticks = (fractionalTicks + periodResolution) / (int)(tempo * speed);
+            fractionalTicks += periodResolution - ticks * (int)(tempo * speed);
 
             return ticks;
         }
@@ -239,14 +239,14 @@ namespace Sanford.Multimedia.Midi
             }
 		}
 
-		public double AltTempo {
-			get { return altTempo; }
+		public double Speed {
+			get { return speed; }
 			set {
 				if (value < 0.01)
 					value = 0.01;
 				else if (value > 100.0)
 					value = 100.0;
-				altTempo = value;
+				speed = value;
 			}
 		}
 

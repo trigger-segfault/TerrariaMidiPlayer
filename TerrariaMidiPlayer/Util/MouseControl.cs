@@ -8,7 +8,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Threading;
 
-namespace TerrariaMidiPlayer {
+namespace TerrariaMidiPlayer.Util {
 
 	//https://stackoverflow.com/questions/10355286/programmatically-mouse-click-in-another-window
 

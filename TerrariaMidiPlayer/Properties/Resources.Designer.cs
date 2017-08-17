@@ -83,36 +83,6 @@ namespace TerrariaMidiPlayer.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap Changelog {
-            get {
-                object obj = ResourceManager.GetObject("Changelog", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap ChannelAdd {
-            get {
-                object obj = ResourceManager.GetObject("ChannelAdd", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap ChannelRemove {
-            get {
-                object obj = ResourceManager.GetObject("ChannelRemove", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
         internal static System.Drawing.Bitmap Credits {
             get {
                 object obj = ResourceManager.GetObject("Credits", resourceCulture);
@@ -126,6 +96,16 @@ namespace TerrariaMidiPlayer.Properties {
         internal static System.Drawing.Bitmap EditName {
             get {
                 object obj = ResourceManager.GetObject("EditName", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap EditNameUnflipped {
+            get {
+                object obj = ResourceManager.GetObject("EditNameUnflipped", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -173,6 +153,26 @@ namespace TerrariaMidiPlayer.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap HarpIcon {
+            get {
+                object obj = ResourceManager.GetObject("HarpIcon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Help {
+            get {
+                object obj = ResourceManager.GetObject("Help", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap InfoIcon {
             get {
                 object obj = ResourceManager.GetObject("InfoIcon", resourceCulture);
@@ -193,9 +193,9 @@ namespace TerrariaMidiPlayer.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap MagicalHarp {
+        internal static System.Drawing.Bitmap Logo112 {
             get {
-                object obj = ResourceManager.GetObject("MagicalHarp", resourceCulture);
+                object obj = ResourceManager.GetObject("Logo112", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -216,16 +216,6 @@ namespace TerrariaMidiPlayer.Properties {
         internal static System.Drawing.Bitmap MidiAdd {
             get {
                 object obj = ResourceManager.GetObject("MidiAdd", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap MidiEdit {
-            get {
-                object obj = ResourceManager.GetObject("MidiEdit", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -283,26 +273,6 @@ namespace TerrariaMidiPlayer.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap PartAdd {
-            get {
-                object obj = ResourceManager.GetObject("PartAdd", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap PartRemove {
-            get {
-                object obj = ResourceManager.GetObject("PartRemove", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
         internal static System.Drawing.Bitmap Pause {
             get {
                 object obj = ResourceManager.GetObject("Pause", resourceCulture);
@@ -343,6 +313,16 @@ namespace TerrariaMidiPlayer.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap SaveConfig {
+            get {
+                object obj = ResourceManager.GetObject("SaveConfig", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap Stop {
             get {
                 object obj = ResourceManager.GetObject("Stop", resourceCulture);
@@ -353,9 +333,9 @@ namespace TerrariaMidiPlayer.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap Time {
+        internal static System.Drawing.Bitmap TerrariaIcon {
             get {
-                object obj = ResourceManager.GetObject("Time", resourceCulture);
+                object obj = ResourceManager.GetObject("TerrariaIcon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

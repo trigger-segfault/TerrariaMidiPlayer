@@ -549,6 +549,13 @@ namespace Sanford.Multimedia.Midi
             }
         }
 
+		public MidiEvent Head {
+			get { return head; }
+		}
+		public MidiEvent Tail {
+			get { return Tail; }
+		}
+
         /// <summary>
         /// Gets the length of the Track in ticks.
         /// </summary>

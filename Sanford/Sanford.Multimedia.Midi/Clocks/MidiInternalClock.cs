@@ -326,10 +326,10 @@ namespace Sanford.Multimedia.Midi
             }
 		}
 
-		public double AltTempo {
-			get { return base.AltTempo; }
-			set { base.AltTempo = value; }
-		}
+		/*public double Speed {
+			get { return base.Speed; }
+			set { base.Speed = value; }
+		}*/
 
 		/*public int Ppqn {
 			get { return base.Ppqn; }

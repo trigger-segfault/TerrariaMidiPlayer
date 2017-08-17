@@ -64,7 +64,7 @@ namespace Sanford.Multimedia.Midi
         /// <param name="message">
         /// The IMidiMessage to dispatch.
         /// </param>
-        public void Dispatch(IMidiMessage message)
+        public void Dispatch(Track track, IMidiMessage message)
         {
             #region Require
 
@@ -78,7 +78,7 @@ namespace Sanford.Multimedia.Midi
             switch(message.MessageType)
             {
                 case MessageType.Channel:
-                    OnChannelMessageDispatched(new ChannelMessageEventArgs((ChannelMessage)message));
+                    OnChannelMessageDispatched(new ChannelMessageEventArgs(track, (ChannelMessage)message));
                     break;
 
                 case MessageType.SystemExclusive:

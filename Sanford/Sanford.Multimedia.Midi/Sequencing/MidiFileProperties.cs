@@ -232,10 +232,11 @@ namespace Sanford.Multimedia.Midi
         [Conditional("DEBUG")]
         private void AssertValid()
         {
-            if(trackCount > 1)
+			// This doesn't seem to cause any errors while reading so I'm removing it
+            /*if(trackCount > 1)
             {
                 Debug.Assert(Format == 1 || Format == 2);
-            }
+            }*/
 
             if(IsSmpte(Division))
             {
@@ -295,16 +296,17 @@ namespace Sanford.Multimedia.Midi
                 {
                     throw new ArgumentOutOfRangeException("TrackCount", value,
                         "Track count out of range.");
-                }
-                else if(value > 1 && Format == 0)
+				}
+				// This doesn't seem to cause any errors while reading so I'm removing it
+				/*else if(value > 1 && Format == 0)
                 {
                     throw new ArgumentException(
                         "Track count invalid for this format.");
-                }
+                }*/
 
-                #endregion
+				#endregion
 
-                trackCount = value;
+				trackCount = value;
 
                 #region Invariant
 

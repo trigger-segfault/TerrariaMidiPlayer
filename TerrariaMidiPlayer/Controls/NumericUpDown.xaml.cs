@@ -15,7 +15,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Xceed.Wpf.Toolkit;
 
-namespace TerrariaMidiPlayer {
+namespace TerrariaMidiPlayer.Controls {
 	/// <summary>
 	/// Interaction logic for NumericUpDown.xaml
 	/// </summary>
@@ -268,6 +268,11 @@ namespace TerrariaMidiPlayer {
 
 		private void OnFocusLost(object sender, RoutedEventArgs e) {
 			UpdateTextBox();
+		}
+
+		private void OnGotFocus(object sender, RoutedEventArgs e) {
+			this.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
+			//textBox.Focus();
 		}
 	}
 }

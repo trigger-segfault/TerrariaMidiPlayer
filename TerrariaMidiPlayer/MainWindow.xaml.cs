@@ -23,6 +23,14 @@ using Microsoft.Win32;
 using System.Xml;
 using System.Reflection;
 using System.Globalization;
+using TerrariaMidiPlayer.Syncing;
+using System.Net;
+using System.Text.RegularExpressions;
+using System.Net.NetworkInformation;
+using TerrariaMidiPlayer.Util;
+using TerrariaMidiPlayer.Windows;
+using TerrariaMidiPlayer.Controls;
+using System.Runtime.InteropServices;
 
 namespace TerrariaMidiPlayer {
 
@@ -40,30 +48,46 @@ namespace TerrariaMidiPlayer {
 			}
 		}
 
+		//https://stackoverflow.com/questions/31020626/how-to-detect-if-keyboard-has-numeric-block
+		[DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Winapi)]
+		private static extern short GetKeyState(int keyCode);
+
+		private bool KeyboardHasNumpad {
+			get { return (((ushort)GetKeyState(0x90)) & 0xffff) != 0; }
+		}
+
 		Stopwatch watch = new Stopwatch();
 		IKeyboardMouseEvents globalHook;
 		Random rand = new Random();
-		int useTime = 3;
-		Song song;
+		Timer uiUpdateTimer = new Timer(100);
 
 		Midi midi = null;
 		Sequencer sequencer;
 
 		Rect clientArea = new Rect(0, 0, 0, 0);
-
-		double projectileAngle = 0;
-		double projectileRange = 360;
-
+		
 		Keybind keybindPlay = new Keybind(Key.NumPad0);
 		Keybind keybindPause = new Keybind(Key.NumPad1);
 		Keybind keybindStop = new Keybind(Key.NumPad2);
 		Keybind keybindClose = new Keybind(Key.Escape);
-
+		Keybind keybindMount = new Keybind(Key.R);
+		bool closeNoFocus = false;
+		bool playbackNoFocus = false;
+		
+		int useTime = 11;
+		int clickTime = 40;
+		bool checksEnabled = true;
+		int checkFrequency = 20;
+		bool mounted = false;
 		int mount = 0;
 
-		bool checksEnabled = true;
-		int checkFrequency = 0;
+		double projectileAngle = 0;
+		double projectileRange = 360;
+
 		int checkCount = 0;
+		bool closing = false;
+
+		bool firstNote = true;
 		
 		static readonly Mount[] Mounts = {
 			new Mount("No Mount", 0),
@@ -83,8 +107,6 @@ namespace TerrariaMidiPlayer {
 		List<Midi> midis = new List<Midi>();
 		bool loaded = false;
 
-		int clickTime = 40;
-
 		public MainWindow() {
 			
 			InitializeComponent();
@@ -92,7 +114,6 @@ namespace TerrariaMidiPlayer {
 			rand = new Random();
 			globalHook = Hook.GlobalEvents();
 			watch = new Stopwatch();
-			useTime = 3;
 			globalHook.KeyDown += OnGlobalKeyDown;
 
 			midis = new List<Midi>();
@@ -105,6 +126,9 @@ namespace TerrariaMidiPlayer {
 			projectileAngle = 0;
 			projectileRange = 360;
 
+			uiUpdateTimer.Elapsed += OnPlaybackUIUpdate;
+
+			useTime = 11;
 			checksEnabled = true;
 			checkFrequency = 0;
 			checkCount = 0;
@@ -117,57 +141,22 @@ namespace TerrariaMidiPlayer {
 			}
 			comboBoxMount.SelectedIndex = 0;
 
+			InitHost();
+			InitClient();
+
+			if (!KeyboardHasNumpad) {
+				keybindPlay = new Keybind(Key.Delete);
+				keybindPause = new Keybind(Key.End);
+				keybindStop = new Keybind(Key.PageDown);
+			}
+
 			LoadConfig();
 
 			UpdateMidi();
+			UpdateKeybindTooltips();
 
-			#region Songs
-			song = new Song();
-			Song kombat = new Song();
-			Song shipping = new Song();
-
-			#region Kombat
-			KombatMain();
-			KombatMain();
-			KombatMain2();
-			KombatMain2();
-			KombatMain2_5();
-			KombatMain3();
-			KombatMain();
-			KombatMain();
-			KombatMain2();
-			KombatMain2();
-			KombatMain4();
-			KombatMain4();
-			KombatMain();
-			KombatMain();
-			#endregion
-
-			kombat = song;
-			song = new Song();
-
-			#region Shipping
-			ShippingIntro();
-			ShippingMain();
-			ShippingMain();
-			ShippingHigh();
-			ShippingHigh();
-			ShippingMain();
-			ShippingMain();
-			ShippingHigh();
-			ShippingHigh();
-			ShippingAlt();
-			ShippingMain();
-			ShippingMain();
-			ShippingHigh();
-			ShippingHigh();
-			ShippingAlt();
-			ShippingEnd();
-			#endregion
-
-			shipping = song;
-			song = kombat;
-			#endregion
+			FocusableProperty.OverrideMetadata(typeof(NumericUpDown), new FrameworkPropertyMetadata(false));
+			KeyboardNavigation.TabNavigationProperty.OverrideMetadata(typeof(NumericUpDown), new FrameworkPropertyMetadata(KeyboardNavigationMode.Local));
 		}
 
 		#region Quick n' Easy Propertiesies
@@ -196,19 +185,24 @@ namespace TerrariaMidiPlayer {
 
 					#region Settings
 					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/UseTime");
-					if (node != null) int.TryParse(node.InnerText, out useTime);
+					if (node != null && !int.TryParse(node.InnerText, out useTime))
+						useTime = 11;
 					numericUseTime.Value = useTime;
 
 					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/ClickTime");
-					if (node != null) int.TryParse(node.InnerText, out clickTime);
+					if (node != null && !int.TryParse(node.InnerText, out clickTime))
+						clickTime = 40;
 					numericClickTime.Value = clickTime;
 
 					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/ChecksEnabled");
-					if (node != null) bool.TryParse(node.InnerText, out checksEnabled);
+					if (node != null && !bool.TryParse(node.InnerText, out checksEnabled))
+						checksEnabled = true;
 					checkBoxChecks.IsChecked = checksEnabled;
+					numericChecks.IsEnabled = checksEnabled;
 
 					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/CheckFrequency");
-					if (node != null) int.TryParse(node.InnerText, out checkFrequency);
+					if (node != null && !int.TryParse(node.InnerText, out checkFrequency))
+						checkFrequency = 20;
 					numericChecks.Value = checkFrequency;
 
 					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Mount");
@@ -223,39 +217,111 @@ namespace TerrariaMidiPlayer {
 					}
 
 					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/ProjectileAngle");
-					if (node != null) double.TryParse(node.InnerText, out projectileAngle);
+					if (node != null && !double.TryParse(node.InnerText, out projectileAngle))
+						projectileAngle = 0;
 					projectileControl.Angle = (int)projectileAngle;
 
 					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/ProjectileRange");
-					if (node != null) double.TryParse(node.InnerText, out projectileRange);
+					if (node != null && !double.TryParse(node.InnerText, out projectileRange))
+						projectileRange = 360;
 					projectileControl.Range = (int)projectileRange;
 
-					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/KeybindPlay");
-					if (node != null) Keybind.TryParse(node.InnerText, out keybindPlay);
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/CloseNoFocus");
+					if (node != null && !bool.TryParse(node.InnerText, out closeNoFocus))
+						closeNoFocus = false;
 
-					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/KeybindPause");
-					if (node != null) Keybind.TryParse(node.InnerText, out keybindPause);
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/PlaybackNoFocus");
+					if (node != null && !bool.TryParse(node.InnerText, out playbackNoFocus))
+						playbackNoFocus = false;
 
-					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/KeybindStop");
-					if (node != null) Keybind.TryParse(node.InnerText, out keybindStop);
+					#region Keybinds
+					Keybind keybind;
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Keybinds/Play");
+					if (node != null && Keybind.TryParse(node.InnerText, out keybind))
+						keybindPlay = keybind;
 
-					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/KeybindClose");
-					if (node != null) Keybind.TryParse(node.InnerText, out keybindClose);
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Keybinds/Pause");
+					if (node != null && Keybind.TryParse(node.InnerText, out keybind))
+						keybindPause = keybind;
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Keybinds/Stop");
+					if (node != null && Keybind.TryParse(node.InnerText, out keybind))
+						keybindStop = keybind;
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Keybinds/Close");
+					if (node != null && Keybind.TryParse(node.InnerText, out keybind)) {
+						keybindClose = keybind;
+						menuItemExit.InputGestureText = keybindClose.ToCharString();
+					}
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Keybinds/Mount");
+					if (node != null && Keybind.TryParse(node.InnerText, out keybind))
+						keybindMount = keybind;
+					#endregion
+
+					#region Syncing
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/SyncType");
+					if (node != null && string.Compare(node.InnerText, "Host", true) == 0) {
+						comboBoxSyncType.SelectedIndex = 1;
+						gridSyncClient.Visibility = Visibility.Hidden;
+						gridSyncHost.Visibility = Visibility.Visible;
+					}
+
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/ClientIPAddress");
+					if (node != null) textBoxClientIP.Text = node.InnerText;
+
+					ushort port = 0;
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/ClientPort");
+					if (node != null) ushort.TryParse(node.InnerText, out port);
+					numericClientPort.Value = port;
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/ClientUsername");
+					if (node != null) textBoxClientUsername.Text = node.InnerText;
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/ClientPassword");
+					if (node != null) textBoxClientPassword.Text = node.InnerText;
+
+					int timeOffset = 0;
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/ClientTimeOffset");
+					if (node != null) int.TryParse(node.InnerText, out timeOffset);
+					numericClientPlayOffset.Value = timeOffset;
+
+					port = 0;
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/HostPort");
+					if (node != null) ushort.TryParse(node.InnerText, out port);
+					numericHostPort.Value = port;
+
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/HostPassword");
+					if (node != null) textBoxHostPassword.Text = node.InnerText;
+
+					timeOffset = 0;
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/HostWait");
+					if (node != null && int.TryParse(node.InnerText, out timeOffset))
+						numericHostWait.Value = timeOffset;
+					#endregion
 					#endregion
 
 					#region Midis
+					int selectedIndex = -1;
+					bool selected;
 					XmlNodeList midiList = doc.SelectNodes("/TerrariaMidiPlayer/Midis/Midi");
 					for (int i = 0; i < midiList.Count; i++) {
 						Midi midi = new Midi();
+
 						if (midi.LoadConfig(midiList[i])) {
+							if (midiList[i].Attributes["Selected"] != null && bool.TryParse(midiList[i].Attributes["Selected"].Value, out selected) && selected)
+								selectedIndex = i;
 							midis.Add(midi);
 							listMidis.Items.Add(midi.ProperName);
 						}
 					}
 
 					if (midis.Count > 0) {
-						listMidis.SelectedIndex = 0;
-						this.midi = midis[0];
+						listMidis.SelectedIndex = Math.Max(0, selectedIndex);
+						this.midi = midis[listMidis.SelectedIndex];
+						this.sequencer.Sequence = midi.Sequence;
+						sequencer.Speed = 100.0 / (double)midi.Speed;
 					}
 					#endregion
 					return true;
@@ -268,7 +334,7 @@ namespace TerrariaMidiPlayer {
 				}
 			}
 			else {
-				SaveConfig();
+				SaveConfig(false);
 				return true;
 			}
 		}
@@ -319,21 +385,79 @@ namespace TerrariaMidiPlayer {
 				element.AppendChild(doc.CreateTextNode(projectileRange.ToString()));
 				setting.AppendChild(element);
 
-				element = doc.CreateElement("KeybindPlay");
+				element = doc.CreateElement("CloseNoFocus");
+				element.AppendChild(doc.CreateTextNode(closeNoFocus.ToString()));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("PlaybackNoFocus");
+				element.AppendChild(doc.CreateTextNode(playbackNoFocus.ToString()));
+				setting.AppendChild(element);
+
+				#region Keybinds
+				XmlElement keybinds = doc.CreateElement("Keybinds");
+				setting.AppendChild(keybinds);
+
+				element = doc.CreateElement("Play");
 				element.AppendChild(doc.CreateTextNode(keybindPlay.ToString()));
-				setting.AppendChild(element);
+				keybinds.AppendChild(element);
 
-				element = doc.CreateElement("KeybindPause");
+				element = doc.CreateElement("Pause");
 				element.AppendChild(doc.CreateTextNode(keybindPause.ToString()));
-				setting.AppendChild(element);
+				keybinds.AppendChild(element);
 
-				element = doc.CreateElement("KeybindStop");
+				element = doc.CreateElement("Stop");
 				element.AppendChild(doc.CreateTextNode(keybindStop.ToString()));
-				setting.AppendChild(element);
+				keybinds.AppendChild(element);
 
-				element = doc.CreateElement("KeybindClose");
+				element = doc.CreateElement("Close");
 				element.AppendChild(doc.CreateTextNode(keybindClose.ToString()));
-				setting.AppendChild(element);
+				keybinds.AppendChild(element);
+
+				element = doc.CreateElement("Mount");
+				element.AppendChild(doc.CreateTextNode(keybindMount.ToString()));
+				keybinds.AppendChild(element);
+				#endregion
+
+				#region Syncing
+				XmlElement syncing = doc.CreateElement("Syncing");
+				setting.AppendChild(syncing);
+
+				element = doc.CreateElement("SyncType");
+				element.AppendChild(doc.CreateTextNode(comboBoxSyncType.SelectedIndex == 0 ? "Client" : "Host"));
+				syncing.AppendChild(element);
+
+				element = doc.CreateElement("ClientIPAddress");
+				element.AppendChild(doc.CreateTextNode(textBoxClientIP.Text));
+				syncing.AppendChild(element);
+
+				element = doc.CreateElement("ClientPort");
+				element.AppendChild(doc.CreateTextNode(numericClientPort.Value.ToString()));
+				syncing.AppendChild(element);
+
+				element = doc.CreateElement("ClientUsername");
+				element.AppendChild(doc.CreateTextNode(textBoxClientUsername.Text));
+				syncing.AppendChild(element);
+
+				element = doc.CreateElement("ClientPassword");
+				element.AppendChild(doc.CreateTextNode(textBoxClientPassword.Text));
+				syncing.AppendChild(element);
+
+				element = doc.CreateElement("ClientTimeOffset");
+				element.AppendChild(doc.CreateTextNode(numericClientPlayOffset.Value.ToString()));
+				syncing.AppendChild(element);
+
+				element = doc.CreateElement("HostPort");
+				element.AppendChild(doc.CreateTextNode(numericHostPort.Value.ToString()));
+				syncing.AppendChild(element);
+
+				element = doc.CreateElement("HostPassword");
+				element.AppendChild(doc.CreateTextNode(textBoxHostPassword.Text));
+				syncing.AppendChild(element);
+
+				element = doc.CreateElement("HostWait");
+				element.AppendChild(doc.CreateTextNode(numericHostWait.Value.ToString()));
+				syncing.AppendChild(element);
+				#endregion
 				#endregion
 
 				#region Midis
@@ -344,30 +468,33 @@ namespace TerrariaMidiPlayer {
 					XmlElement midiElement = doc.CreateElement("Midi");
 					midis.AppendChild(midiElement);
 
+					if (midi == this.midi)
+						midiElement.SetAttribute("Selected", true.ToString());
+
 					element = doc.CreateElement("FilePath");
 					element.AppendChild(doc.CreateTextNode(midi.Path));
 					midiElement.AppendChild(element);
 
-					element = doc.CreateElement("LastModified");
-					element.AppendChild(doc.CreateTextNode(midi.LastModified.ToString()));
-					midiElement.AppendChild(element);
-
-					element = doc.CreateElement("Name");
-					element.AppendChild(doc.CreateTextNode(midi.Name));
-					midiElement.AppendChild(element);
-
-					element = doc.CreateElement("NoteOffset");
-					element.AppendChild(doc.CreateTextNode(midi.NoteOffset.ToString()));
-					midiElement.AppendChild(element);
-
-					element = doc.CreateElement("Speed");
-					element.AppendChild(doc.CreateTextNode(midi.Speed.ToString()));
-					midiElement.AppendChild(element);
-
-					element = doc.CreateElement("Keybind");
-					element.AppendChild(doc.CreateTextNode(midi.Keybind.ToString()));
-					midiElement.AppendChild(element);
-
+					if (midi.Name != "") {
+						element = doc.CreateElement("Name");
+						element.AppendChild(doc.CreateTextNode(midi.Name));
+						midiElement.AppendChild(element);
+					}
+					if (midi.NoteOffset != 0) {
+						element = doc.CreateElement("NoteOffset");
+						element.AppendChild(doc.CreateTextNode(midi.NoteOffset.ToString()));
+						midiElement.AppendChild(element);
+					}
+					if (midi.Speed != 100) {
+						element = doc.CreateElement("Speed");
+						element.AppendChild(doc.CreateTextNode(midi.Speed.ToString()));
+						midiElement.AppendChild(element);
+					}
+					if (midi.Keybind != Keybind.None) {
+						element = doc.CreateElement("Keybind");
+						element.AppendChild(doc.CreateTextNode(midi.Keybind.ToString()));
+						midiElement.AppendChild(element);
+					}
 					XmlElement tracks = doc.CreateElement("Tracks");
 					midiElement.AppendChild(tracks);
 
@@ -403,12 +530,19 @@ namespace TerrariaMidiPlayer {
 		}
 
 		private void OnClosing(object sender, System.ComponentModel.CancelEventArgs e) {
+			closing = true;
 			globalHook.KeyDown -= OnGlobalKeyDown;
 			globalHook.Dispose();
 			globalHook = null;
 			watch.Stop();
 			sequencer.Stop();
 			SaveConfig(true);
+			uiUpdateTimer.Stop();
+
+			if (server != null)
+				server.Stop();
+			if (client != null)
+				client.Disconnect();
 		}
 
 		private void OnGlobalKeyDown(object sender, System.Windows.Forms.KeyEventArgs e) {
@@ -416,18 +550,28 @@ namespace TerrariaMidiPlayer {
 				return;
 
 			if (midi != null) {
-				if (keybindPlay.IsDown(e)) {
-					Play();
+				if (keybindPlay.IsDown(e) && (playbackNoFocus || IsActive || TerrariaWindowLocator.CheckIfFocused())) {
+					if (server != null)
+						HostPlay();
+					else
+						Play();
 				}
-				else if (keybindPause.IsDown(e)) {
+				else if (keybindPause.IsDown(e) && (playbackNoFocus || IsActive || TerrariaWindowLocator.CheckIfFocused())) {
 					Pause();
 				}
 				else if (keybindStop.IsDown(e)) {
-					Stop();
+					if (server != null)
+						HostStop();
+					else
+						Stop();
 				}
 			}
+			if (keybindMount.IsDown(e) && TerrariaWindowLocator.CheckIfFocused()) {
+				mounted = !mounted;
+				checkBoxMounted.IsChecked = mounted;
+			}
 			for (int i = 0; i < midis.Count; i++) {
-				if (midis[i].Keybind.IsDown(e)) {
+				if (midis[i].Keybind.IsDown(e) && (playbackNoFocus || IsActive || TerrariaWindowLocator.CheckIfFocused())) {
 					Stop();
 
 					loaded = false;
@@ -435,11 +579,12 @@ namespace TerrariaMidiPlayer {
 					loaded = true;
 					midi = midis[listMidis.SelectedIndex];
 					sequencer.Sequence = midi.Sequence;
+					sequencer.Speed = 100.0 / (double)midi.Speed;
 
 					UpdateMidi();
 				}
 			}
-			if (keybindClose.IsDown(e)) {
+			if (keybindClose.IsDown(e) && (closeNoFocus || IsActive || TerrariaWindowLocator.CheckIfFocused())) {
 				Close();
 			}
 		}
@@ -451,39 +596,86 @@ namespace TerrariaMidiPlayer {
 		}
 
 		private void OnChannelMessagePlayed(object sender, ChannelMessageEventArgs e) {
-			if (midi.IsMessagePlayable(e.Message) && watch.ElapsedMilliseconds >= useTime * 1000 / 60 + 2) {
+			if (midi.IsMessagePlayable(e) && (watch.ElapsedMilliseconds >= useTime * 1000 / 60 + 2 || firstNote)) {
 				if (checksEnabled) {
 					checkCount++;
-					if (checkCount > checkFrequency) {
+					TerrariaWindowLocator.Update(checkCount > checkFrequency);
+					if (checkCount > checkFrequency)
 						checkCount = 0;
-						TerrariaWindowLocator.Update();
-						if (!TerrariaWindowLocator.HasFocus) {
-							TerrariaWindowLocator.Focus();
-							Thread.Sleep(100);
-						}
-						if (!TerrariaWindowLocator.IsOpen) {
-							Pause();
-							return;
-						}
-						clientArea = TerrariaWindowLocator.ClientArea;
+					if (!TerrariaWindowLocator.HasFocus) {
+						TerrariaWindowLocator.Focus();
+						Thread.Sleep(100);
+						return;
 					}
+					if (!TerrariaWindowLocator.IsOpen) {
+						Pause();
+						return;
+					}
+					clientArea = TerrariaWindowLocator.ClientArea;
 				}
-				int note = e.Message.Data1 - 12 * (midi.GetTrackSettingsByChannel(e.Message.MidiChannel).OctaveOffset + 1) + midi.NoteOffset;
+				firstNote = false;
+				int note = e.Message.Data1 - 12 * (midi.GetTrackSettingsByTrackObj(e.Track).OctaveOffset + 1) + midi.NoteOffset;
 				watch.Restart();
-				PlaySemitone(note, (projectileAngle - projectileRange / 2 + rand.NextDouble() * projectileRange + 270) / 360.0 * Math.PI * 2.0);
+				PlaySemitone(note);
 			}
 		}
 
-		private void PlaySemitone(int semitone, double direction) {
+		private void PlaySemitone(int semitone) {
+			double direction;
 			double heightRatio = clientArea.Height / 48.0;
 			while (semitone < 0)
 				semitone += 12;
 			while (semitone > 24)
 				semitone -= 12;
 			double centerx = clientArea.Width / 2;
-			double centery = clientArea.Height / 2 - Mounts[mount].Offset;
-			int x = (int)(centerx + Math.Cos(direction) * (heightRatio * semitone + 2));
-			int y = (int)(centery + Math.Sin(direction) * (heightRatio * semitone + 2));
+			double centery = clientArea.Height / 2 - (mounted ? Mounts[mount].Offset : 0);
+			int testY = (int)(centery - heightRatio * semitone);
+			// The right & left boundary before losing notes go bad
+			double maxAngle = (Math.Acos(centery / (heightRatio * semitone)) / Math.PI * 180) % 360;
+			double minAngle = 360 - maxAngle;
+			double rangeStart = ((projectileAngle - projectileRange / 2 + 360)) % 360;
+			double rangeEnd = (projectileAngle + projectileRange / 2) % 360;
+			// Fix mount offsets reducing vertical note range
+			if (testY < 0 && ((rangeStart > minAngle || rangeStart < maxAngle) || 
+				(rangeEnd > minAngle || rangeEnd < maxAngle) || (rangeStart > rangeEnd))) {
+				double start1 = 0, start2 = 0;
+				double stop1 = 0, stop2 = 0;
+				if (rangeStart <= minAngle && rangeStart >= maxAngle) {
+					start1 = rangeStart;
+					stop1 = minAngle;
+				}
+				if (rangeEnd >= maxAngle) {
+					start2 = maxAngle;
+					stop2 = rangeEnd;
+				}
+				if (start1 == 0 && start2 == 0) {
+					if (projectileAngle == 0)
+						direction = (rand.Next() % 2 == 0 ? minAngle : maxAngle);
+					else if (projectileAngle < 180)
+						direction = maxAngle;
+					else
+						direction = minAngle;
+				}
+				else if (start2 == 0) {
+					direction = start1 + rand.NextDouble() * (stop1 - start1);
+				}
+				else if (start1 == 0) {
+					direction = start2 + rand.NextDouble() * (stop2 - start2);
+				}
+				else {
+					double angle = rand.NextDouble() * ((stop1 - start1) + (stop2 - start2));
+					if (angle >= (stop1 - start1))
+						direction = start2 + (angle - (stop1 - start1));
+					else
+						direction = start1 + angle;
+				}
+				direction = (direction + 270) / 180 * Math.PI;
+			}
+			else {
+				direction = (projectileAngle - projectileRange / 2 + rand.NextDouble() * projectileRange + 270) / 180 * Math.PI;
+			}
+			int x = (int)(centerx + Math.Cos(direction) * (heightRatio * semitone));
+			int y = (int)(centery + Math.Sin(direction) * (heightRatio * semitone));
 			if (x < 0) x = 0;
 			if (x >= (int)clientArea.Width) x = (int)clientArea.Width - 1;
 			if (y < 0) y = 0;
@@ -492,430 +684,6 @@ namespace TerrariaMidiPlayer {
 			y += (int)clientArea.Y;
 			MouseControl.SimulateClick(x, y, clickTime);
 		}
-		#endregion
-
-		#region Songs
-		#region ShippingIntro
-		private void ShippingIntro() {
-			//--------------------
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.E0, 10);
-			//--------------------
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.E0, 4);
-			song.Add(Notes.E1, 1);
-			song.Add(Notes.E1, 1);
-			song.Add(Notes.E1, 1);
-			song.Add(Notes.E1, 1);
-			song.Add(Notes.E1, 1);
-			song.Add(Notes.E1, 1);
-			//--------------------
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.Fs0, 1);
-			song.Add(Notes.G0, 1);
-
-			song.Add(Notes.Fs0, 1);
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.D0, 1);
-			//--------------------
-			song.Add(Notes.B0, 1);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.G0, 1);
-
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.G0, 1);
-			song.Add(Notes.Fs0, 1);
-
-			song.Add(Notes.G0, 1);
-			song.Add(Notes.Fs0, 1);
-			song.Add(Notes.D0, 1);
-
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-			//--------------------
-		}
-		#endregion
-		#region ShippingMain
-		private void ShippingMain() {
-			//--------------------
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.Fs0, 1);
-			song.Add(Notes.G0, 1);
-
-			song.Add(Notes.Fs0, 1);
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.D0, 1);
-			//--------------------
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.Fs0, 1);
-			song.Add(Notes.G0, 1);
-
-			song.Add(Notes.B0, 3);
-			//--------------------
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.Fs0, 1);
-			song.Add(Notes.G0, 1);
-
-			song.Add(Notes.Fs0, 1);
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.D0, 1);
-			//--------------------
-			song.Add(Notes.B0, 1);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.G0, 1);
-
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.G0, 1);
-			song.Add(Notes.Fs0, 1);
-
-			song.Add(Notes.G0, 1);
-			song.Add(Notes.Fs0, 1);
-			song.Add(Notes.D0, 1);
-
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-			//--------------------
-		}
-		#endregion
-		#region ShippingHigh
-		private void ShippingHigh() {
-			//--------------------
-			song.Add(Notes.B0, 2);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.B0, 2);
-			song.Add(Notes.A0, 1);
-
-			song.Add(Notes.B0, 1);
-			song.Add(Notes.Cs1, 1);
-			song.Add(Notes.D1, 1);
-
-			song.Add(Notes.Cs1, 1);
-			song.Add(Notes.B0, 1);
-			song.Add(Notes.A0, 1);
-			//--------------------
-			song.Add(Notes.B0, 2);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.B0, 2);
-			song.Add(Notes.A0, 1);
-
-			song.Add(Notes.B0, 1);
-			song.Add(Notes.Cs1, 1);
-			song.Add(Notes.D1, 1);
-
-			song.Add(Notes.Fs1, 3);
-			//--------------------
-			song.Add(Notes.B0, 2);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.B0, 2);
-			song.Add(Notes.A0, 1);
-
-			song.Add(Notes.B0, 1);
-			song.Add(Notes.Cs1, 1);
-			song.Add(Notes.D1, 1);
-
-			song.Add(Notes.Cs1, 1);
-			song.Add(Notes.B0, 1);
-			song.Add(Notes.A0, 1);
-			//--------------------
-			song.Add(Notes.Fs1, 1);
-			song.Add(Notes.E1, 1);
-			song.Add(Notes.D1, 1);
-
-			song.Add(Notes.E1, 1);
-			song.Add(Notes.D1, 1);
-			song.Add(Notes.Cs1, 1);
-
-			song.Add(Notes.D1, 1);
-			song.Add(Notes.Cs1, 1);
-			song.Add(Notes.A0, 1);
-
-			song.Add(Notes.B0, 2);
-			song.Add(Notes.A0, 1);
-			//--------------------
-		}
-		#endregion
-		#region ShippingEnd
-		private void ShippingEnd() {
-			//--------------------
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.Fs0, 1);
-			song.Add(Notes.G0, 1);
-
-			song.Add(Notes.Fs0, 1);
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.D0, 1);
-			//--------------------
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.Fs0, 1);
-			song.Add(Notes.G0, 1);
-
-			song.Add(Notes.B0, 3);
-			//--------------------
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-			song.Add(Notes.E0, 2);
-			song.Add(Notes.D0, 1);
-
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.Fs0, 1);
-			song.Add(Notes.G0, 1);
-
-			song.Add(Notes.Fs0, 1);
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.D0, 1);
-			//--------------------
-			song.Add(Notes.B0, 1);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.G0, 1);
-
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.G0, 1);
-			song.Add(Notes.D0, 1);
-
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.E0, 1);
-			song.Add(Notes.E0, 1);
-			//--------------------
-		}
-		#endregion
-		#region ShippingAlt
-		private void ShippingAlt() {
-			//--------------------
-			song.Add(Notes.Fs1, 2);
-			song.Add(Notes.Fs1, 1);
-			song.Add(Notes.Fs1, 2);
-			song.Add(Notes.Fs1, 1);
-			song.Add(Notes.Fs1, 2);
-			song.Add(Notes.Fs1, 1);
-			song.Add(Notes.D1, 3);
-
-			song.Add(Notes.G1, 3);
-			song.Add(Notes.Fs1, 3);
-			song.Add(Notes.D1, 5);
-			song.Add(Notes.E1, 1);
-			//--------------------
-			song.Add(Notes.Fs1, 2);
-			song.Add(Notes.Fs1, 1);
-			song.Add(Notes.Fs1, 2);
-			song.Add(Notes.Fs1, 1);
-			song.Add(Notes.Fs1, 2);
-			song.Add(Notes.Fs1, 1);
-			song.Add(Notes.D1, 3);
-
-			song.Add(Notes.G1, 3);
-			song.Add(Notes.G1, 3);
-			song.Add(Notes.G1, 3);
-			song.Add(Notes.A1, 3);
-			//--------------------
-			song.Add(Notes.Fs1, 2);
-			song.Add(Notes.Fs1, 1);
-			song.Add(Notes.Fs1, 2);
-			song.Add(Notes.Fs1, 1);
-			song.Add(Notes.Fs1, 2);
-			song.Add(Notes.Fs1, 1);
-			song.Add(Notes.D1, 3);
-
-			song.Add(Notes.G1, 3);
-			song.Add(Notes.Fs1, 3);
-			song.Add(Notes.D1, 5);
-			song.Add(Notes.E1, 1);
-			//--------------------
-			song.Add(Notes.Fs1, 2);
-			song.Add(Notes.Fs1, 1);
-			song.Add(Notes.Fs1, 2);
-			song.Add(Notes.Fs1, 1);
-			song.Add(Notes.Fs1, 2);
-			song.Add(Notes.Fs1, 1);
-			song.Add(Notes.Fs1, 2);
-			song.Add(Notes.Fs1, 1);
-
-			song.Add(Notes.E1, 3);
-			song.Add(Notes.Fs1, 3);
-			song.Add(Notes.D1, 5);
-			song.Add(Notes.D0, 1);
-			//--------------------
-		}
-		#endregion
-
-		#region KombatMain
-		private void KombatMain() {
-			//--------------------
-			song.Add(Notes.A0, 2);
-			song.Add(Notes.A0, 2);
-			song.Add(Notes.C1, 2);
-			song.Add(Notes.A0, 2);
-			song.Add(Notes.D1, 2);
-			song.Add(Notes.A0, 2);
-			song.Add(Notes.E1, 2);
-			song.Add(Notes.D1, 2);
-			//--------------------
-			song.Add(Notes.C1, 2);
-			song.Add(Notes.C1, 2);
-			song.Add(Notes.E1, 2);
-			song.Add(Notes.C1, 2);
-			song.Add(Notes.G1, 2);
-			song.Add(Notes.C1, 2);
-			song.Add(Notes.E1, 2);
-			song.Add(Notes.C1, 2);
-			//--------------------
-			song.Add(Notes.G0, 2);
-			song.Add(Notes.G0, 2);
-			song.Add(Notes.B0, 2);
-			song.Add(Notes.G0, 2);
-			song.Add(Notes.C1, 2);
-			song.Add(Notes.G0, 2);
-			song.Add(Notes.D1, 2);
-			song.Add(Notes.C1, 2);
-			//--------------------
-			song.Add(Notes.F0, 2);
-			song.Add(Notes.F0, 2);
-			song.Add(Notes.A0, 2);
-			song.Add(Notes.F0, 2);
-			song.Add(Notes.C1, 2);
-			song.Add(Notes.F0, 2);
-			song.Add(Notes.C1, 2);
-			song.Add(Notes.B0, 2);
-			//--------------------
-		}
-		#endregion
-		#region KombatMain2
-		private void KombatMain2() {
-			//--------------------
-			song.Add(Notes.A0, 3);
-			song.Add(Notes.A0, 3);
-			song.Add(Notes.A0, 3);
-			song.Add(Notes.A0, 3);
-			song.Add(Notes.G0, 2);
-			song.Add(Notes.C1, 2);
-			//--------------------
-			song.Add(Notes.A0, 3);
-			song.Add(Notes.A0, 3);
-			song.Add(Notes.A0, 3);
-			song.Add(Notes.A0, 3);
-			song.Add(Notes.G0, 2);
-			song.Add(Notes.E0, 2);
-			//--------------------
-			song.Add(Notes.A0, 3);
-			song.Add(Notes.A0, 3);
-			song.Add(Notes.A0, 3);
-			song.Add(Notes.A0, 3);
-			song.Add(Notes.G0, 2);
-			song.Add(Notes.C1, 2);
-			//--------------------
-			song.Add(Notes.A0, 3);
-			song.Add(Notes.A0, 3);
-			song.Add(Notes.A0, 2);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.A0, 2);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.A0, 4);
-			//--------------------
-		}
-		#endregion
-		#region KombatMain2_5
-		private void KombatMain2_5() {
-			//--------------------
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.E1, 2);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.C1, 2);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.As0, 2);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.C1, 2);
-			song.Add(Notes.As0, 2);
-			song.Add(Notes.G0, 2);
-			//--------------------
-		}
-		#endregion
-		#region KombatMain3
-		private void KombatMain3() {
-			//--------------------
-			song.Add(Notes.A1, 3);
-			song.Add(Notes.E1, 3);
-			song.Add(Notes.D1, 4);
-			song.Add(Notes.Bf1, 2);
-			song.Add(Notes.A1, 4);
-			//--------------------
-			song.Add(Notes.A1, 3);
-			song.Add(Notes.E1, 3);
-			song.Add(Notes.D1, 4);
-			song.Add(Notes.Bf1, 2);
-			song.Add(Notes.A1, 4);
-			//--------------------
-			song.Add(Notes.A1, 3);
-			song.Add(Notes.E1, 3);
-			song.Add(Notes.D1, 4);
-			song.Add(Notes.Bf1, 2);
-			song.Add(Notes.A1, 4);
-			//--------------------
-			song.Add(Notes.A1, 3);
-			song.Add(Notes.E1, 3);
-			song.Add(Notes.D1, 4);
-			song.Add(Notes.Bf1, 2);
-			song.Add(Notes.A1, 4);
-			//--------------------
-		}
-		#region KombatMain4
-		#endregion
-		private void KombatMain4() {
-			//--------------------
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.E1, 2);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.C1, 2);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.As0, 2);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.C1, 2);
-			song.Add(Notes.As0, 2);
-			song.Add(Notes.G0, 2);
-			//--------------------
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.E1, 2);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.C1, 2);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.As0, 2);
-			song.Add(Notes.A0, 1);
-			song.Add(Notes.C1, 2);
-			song.Add(Notes.As0, 2);
-			song.Add(Notes.G0, 2);
-			//--------------------
-		}
-		#endregion
-
 		#endregion
 
 		#region Playback Tab Events
@@ -945,6 +713,13 @@ namespace TerrariaMidiPlayer {
 			clickTime = numericClickTime.Value;
 		}
 
+		private void OnMountedChanged(object sender, RoutedEventArgs e) {
+			if (!loaded)
+				return;
+
+			mounted = checkBoxMounted.IsChecked.Value;
+		}
+
 		private void OnMountChanged(object sender, SelectionChangedEventArgs e) {
 			if (!loaded)
 				return;
@@ -956,36 +731,93 @@ namespace TerrariaMidiPlayer {
 			projectileAngle = projectileControl.Angle;
 			projectileRange = projectileControl.Range;
 		}
+
+		private void OnStopToggled(object sender, RoutedEventArgs e) {
+			Stop();
+		}
+
+		private void OnPlayToggled(object sender, RoutedEventArgs e) {
+			Play();
+		}
+
+		private void OnPauseToggled(object sender, RoutedEventArgs e) {
+			Pause();
+		}
+
+		private void OnMidiPositionChanged(object sender, RoutedPropertyChangedEventArgs<double> e) {
+			if (!loaded)
+				return;
+
+			sequencer.Position = sequencer.ProgressToTicks(e.NewValue);
+			labelMidiPosition.Content = MillisecondsToString(sequencer.CurrentTime) + "/" + MillisecondsToString(sequencer.Duration);
+			toggleButtonStop.IsChecked = (e.NewValue == 0);
+			toggleButtonPlay.IsChecked = false;
+			toggleButtonPause.IsChecked = (e.NewValue != 0);
+		}
 		#endregion
 
 		#region Midi Playing
 		private void Play() {
 			if (midi != null) {
-				TerrariaWindowLocator.Update();
+				firstNote = true;
+				TerrariaWindowLocator.Update(true);
 				if (!TerrariaWindowLocator.HasFocus) {
 					TerrariaWindowLocator.Focus();
 					Thread.Sleep(400);
 				}
 				if (TerrariaWindowLocator.IsOpen) {
 					clientArea = TerrariaWindowLocator.ClientArea;
-					watch.Start();
-					sequencer.Continue();
+					watch.Restart();
+					if (sequencer.Position <= 1)
+						sequencer.Start();
+					else
+						sequencer.Continue();
 					checkCount = 0;
+					Dispatcher.Invoke(() => {
+						toggleButtonStop.IsChecked = false;
+						toggleButtonPlay.IsChecked = true;
+						toggleButtonPause.IsChecked = false;
+						uiUpdateTimer.Start();
+					});
 				}
 				else {
-					TriggerMessageBox.Show(this, MessageIcon.Error, "You cannot play a song when Terraria is not running!", "Terraria not Running");
+					toggleButtonPlay.IsChecked = false;
+					TriggerMessageBox.Show(this, MessageIcon.Error, "You cannot play a midi when Terraria isn't running!", "Terraria not Running");
 				}
 			}
 		}
 
 		private void Pause() {
 			sequencer.Stop();
+			if (midi != null) {
+				Dispatcher.Invoke(() => {
+					toggleButtonStop.IsChecked = false;
+					toggleButtonPlay.IsChecked = false;
+					toggleButtonPause.IsChecked = true;
+					OnPlaybackUIUpdate(null, null);
+					uiUpdateTimer.Stop();
+				});
+			}
 		}
 
 		private void Stop() {
 			watch.Stop();
 			sequencer.Stop();
 			sequencer.Position = 0;
+			if (midi != null) {
+				Dispatcher.Invoke(() => {
+					toggleButtonStop.IsChecked = true;
+					toggleButtonPlay.IsChecked = false;
+					toggleButtonPause.IsChecked = false;
+					OnPlaybackUIUpdate(null, null);
+					uiUpdateTimer.Stop();
+					labelClientPlaying.Content = "Stopped";
+				});
+			}
+			if (server != null)
+				HostSongFinished();
+			if (client != null)
+				ClientSongFinished();
 		}
 		#endregion
 
@@ -998,6 +830,7 @@ namespace TerrariaMidiPlayer {
 			if (listMidis.SelectedIndex != -1) {
 				midi = midis[listMidis.SelectedIndex];
 				sequencer.Sequence = midi.Sequence;
+				sequencer.Speed = 100.0 / (double)midi.Speed;
 			}
 			else {
 				midi = null;
@@ -1017,17 +850,24 @@ namespace TerrariaMidiPlayer {
 			if (result.HasValue && result.Value) {
 				string fileName = dialog.FileName;
 				midi = new Midi();
-				midi.Load(fileName);
+				if (midi.Load(fileName)) {
 
-				midis.Add(midi);
-				listMidis.Items.Add("Loading...");
-				listMidis.SelectedIndex = listMidis.Items.Count - 1;
-				listMidis.ScrollIntoView(listMidis.Items[listMidis.SelectedIndex]);
+					midis.Add(midi);
+					listMidis.Items.Add("Loading...");
+					listMidis.SelectedIndex = listMidis.Items.Count - 1;
+					listMidis.ScrollIntoView(listMidis.Items[listMidis.SelectedIndex]);
 
-				sequencer.Sequence = midi.Sequence;
-				listMidis.Items[listMidis.SelectedIndex] = midi.ProperName;
-				listMidis.SelectedIndex = listMidis.Items.Count - 1;
-				UpdateMidi();
+					sequencer.Sequence = midi.Sequence;
+					sequencer.Speed = 100.0 / (double)midi.Speed;
+					listMidis.Items[listMidis.SelectedIndex] = midi.ProperName;
+					listMidis.SelectedIndex = listMidis.Items.Count - 1;
+					UpdateMidi();
+				}
+				else {
+					var result2 = TriggerMessageBox.Show(this, MessageIcon.Error, "Error when loading the selected midi! Would you like to see the error?", "Load Error", MessageBoxButton.YesNo);
+					if (result2 == MessageBoxResult.Yes)
+						ErrorMessageBox.Show(midi.LoadException, true);
+				}
 			}
 		}
 
@@ -1054,6 +894,7 @@ namespace TerrariaMidiPlayer {
 				if (index != -1) {
 					midi = midis[index];
 					sequencer.Sequence = midi.Sequence;
+					sequencer.Speed = 100.0 / (double)midi.Speed;
 				}
 				else {
 					midi = null;
@@ -1067,11 +908,13 @@ namespace TerrariaMidiPlayer {
 			if (midi != null) {
 				loaded = false;
 				string newName = EditNameDialog.ShowDialog(this, midi.ProperName);
-				loaded = true;
 				if (newName != null) {
+					int index = listMidis.SelectedIndex;
 					midi.Name = newName;
 					listMidis.Items[listMidis.SelectedIndex] = newName;
+					listMidis.SelectedIndex = index;
 				}
+				loaded = true;
 			}
 		}
 
@@ -1153,7 +996,9 @@ namespace TerrariaMidiPlayer {
 				return;
 
 			midi.Speed = numericSpeed.Value;
-			sequencer.AltTempo = 100.0 / (double)midi.Speed;
+			sequencer.Speed = 100.0 / (double)midi.Speed;
+			labelDuration.Content = "Duration: " + MillisecondsToString(sequencer.Duration);
+			OnPlaybackUIUpdate(null, null);
 		}
 
 		public void OnMidiKeybindChanged(object sender, RoutedEventArgs e) {
@@ -1172,6 +1017,8 @@ namespace TerrariaMidiPlayer {
 					name = "Stop Midi";
 				else if (newBind == keybindClose)
 					name = "Close Window";
+				else if (newBind == keybindMount)
+					name = "Toggle Mount";
 				else {
 					for (int i = 0; i < midis.Count; i++) {
 						if (midis[i] != midi && newBind == midis[i].Keybind) {
@@ -1199,7 +1046,7 @@ namespace TerrariaMidiPlayer {
 			if (midi != null) {
 				loaded = false;
 				labelTotalNotes.Content = "Total Notes: " + midi.TotalNotes;
-				//labelDuration.Content = "Duration: " + MillisecondsToString(sequencer.Duration);
+				labelDuration.Content = "Duration: " + MillisecondsToString(sequencer.Duration);
 				keybindReaderMidi.Keybind = midi.Keybind;
 				numericNoteOffset.IsEnabled = true;
 				numericSpeed.IsEnabled = true;
@@ -1217,6 +1064,10 @@ namespace TerrariaMidiPlayer {
 					listTracks.SelectedIndex = 0;
 				}
 				listTracks.IsEnabled = (midi.TrackCount > 0);
+
+				sequencer.Speed = 100.0 / (double)midi.Speed;
+				labelDuration.Content = "Duration: " + MillisecondsToString(sequencer.Duration);
+				OnPlaybackUIUpdate(null, null);
 				loaded = true;
 			}
 			else {
@@ -1255,6 +1106,41 @@ namespace TerrariaMidiPlayer {
 			buttonEditMidiName.IsEnabled = (listMidis.SelectedIndex != -1);
 			buttonMoveMidiUp.IsEnabled = (listMidis.SelectedIndex > 0);
 			buttonMoveMidiDown.IsEnabled = (listMidis.SelectedIndex != -1 && listMidis.SelectedIndex + 1 < listMidis.Items.Count);
+
+			toggleButtonStop.IsEnabled = (listMidis.SelectedIndex != -1);
+			toggleButtonPlay.IsEnabled = (listMidis.SelectedIndex != -1);
+			toggleButtonPause.IsEnabled = (listMidis.SelectedIndex != -1);
+			sliderMidiPosition.IsEnabled = (listMidis.SelectedIndex != -1);
+			loaded = false;
+			sliderMidiPosition.Value = 0;
+			loaded = true;
+			if (listMidis.SelectedIndex != -1)
+				labelMidiPosition.Content = MillisecondsToString(sequencer.CurrentTime) + "/" + MillisecondsToString(sequencer.Duration);
+			else
+				labelMidiPosition.Content = "-:--/-:--";
+		}
+
+		private void OnPlaybackUIUpdate(object sender, ElapsedEventArgs e) {
+			Dispatcher.Invoke(() => {
+				loaded = false;
+				double currentProgress = sequencer.CurrentProgress;
+				sliderMidiPosition.Value = (double.IsNaN(currentProgress) ? 0 : currentProgress);
+				loaded = true;
+				labelMidiPosition.Content = MillisecondsToString(sequencer.CurrentTime) + "/" + MillisecondsToString(sequencer.Duration);
+			});
+		}
+
+		private void UpdateKeybindTooltips() {
+			toggleButtonStop.ToolTip = "Stop midi playback. <";
+			toggleButtonPlay.ToolTip = "Start midi playback. <";
+			toggleButtonPause.ToolTip = "Pause midi playback. <";
+			checkBoxMounted.ToolTip = "Needed to calculate the center of the player. <";
+			// Yes I know stop can't "officially" be unassigned.
+			toggleButtonStop.ToolTip += (keybindStop == Keybind.None ? "No Keybind" : keybindStop.ToCharString()) + ">";
+			toggleButtonPlay.ToolTip += (keybindPlay == Keybind.None ? "No Keybind" : keybindPlay.ToCharString()) + ">";
+			toggleButtonPause.ToolTip += (keybindPause == Keybind.None ? "No Keybind" : keybindPause.ToCharString()) + ">";
+			checkBoxMounted.ToolTip += (keybindPause == Keybind.None ? "No Keybind" : keybindMount.ToCharString()) + ">";
+
 		}
 		#endregion
 
@@ -1297,16 +1183,469 @@ namespace TerrariaMidiPlayer {
 
 		#region Menu Item Events
 		private void OnChangeKeybinds(object sender, RoutedEventArgs e) {
-			ChangeKeybindsDialog.ShowDialog(this, ref keybindPlay, ref keybindPause, ref keybindStop, ref keybindClose);
+			Stop();
+			loaded = false;
+			ChangeKeybindsDialog.ShowDialog(this, ref keybindPlay, ref keybindPause, ref keybindStop, ref keybindClose, ref keybindMount,
+				ref closeNoFocus, ref playbackNoFocus, midis);
+			loaded = true;
+			menuItemExit.InputGestureText = keybindClose.ToCharString();
+			UpdateKeybindTooltips();
 		}
 
 		private void OnExit(object sender, RoutedEventArgs e) {
 			Close();
 		}
-		#endregion
 
 		private void OnOpenOnGitHub(object sender, RoutedEventArgs e) {
 			Process.Start("https://github.com/trigger-death/TerrariaMidiPlayer");
 		}
+
+		private void OnAbout(object sender, RoutedEventArgs e) {
+			loaded = false;
+			AboutWindow.Show(this);
+			loaded = true;
+		}
+
+		private void OnHelp(object sender, RoutedEventArgs e) {
+			Process.Start("https://github.com/trigger-death/TerrariaMidiPlayer/wiki");
+		}
+
+		private void OnCredits(object sender, RoutedEventArgs e) {
+			loaded = false;
+			CreditsWindow.Show(this);
+			loaded = true;
+		}
+
+		private void OnAboutInstruments(object sender, RoutedEventArgs e) {
+			Process.Start("https://terraria.gamepedia.com/Harp");
+		}
+
+		private void OnSaveConfig(object sender, RoutedEventArgs e) {
+			SaveConfig(false);
+		}
+		#endregion
+
+		#region Syncing
+		private Stopwatch syncWatch;
+		private DateTime syncTime;
+		private long syncTickCount;
+
+
+		private void OnSyncTypeChanged(object sender, SelectionChangedEventArgs e) {
+			if (!loaded)
+				return;
+
+			switch (comboBoxSyncType.SelectedIndex) {
+				case 0:
+					gridSyncClient.Visibility = Visibility.Visible;
+					gridSyncHost.Visibility = Visibility.Hidden;
+					break;
+				case 1:
+					gridSyncClient.Visibility = Visibility.Hidden;
+					gridSyncHost.Visibility = Visibility.Visible;
+					break;
+			}
+		}
+
+		private DateTime CalculateSyncDateTime() {
+			long ticks = unchecked((uint)Environment.TickCount) - syncTickCount;
+			return syncTime.AddMilliseconds(ticks);
+		}
+
+		#region Host
+		private Server server;
+		private Dictionary<string, User> userMap;
+		private List<User> userList;
+		private string password = "";
+
+		private void InitHost() {
+			server = null;
+			userMap = new Dictionary<string, User>();
+			userList = new List<User>();
+
+			gridSyncHost.Visibility = Visibility.Hidden;
+			//buttonHostChecks.IsEnabled = false;
+			textBoxHostNextSong.IsEnabled = false;
+			buttonHostAssignSong.IsEnabled = false;
+			listViewClients.IsEnabled = false;
+			numericHostWait.IsEnabled = false;
+			syncTime = DateTime.UtcNow;
+			syncTickCount = unchecked((uint)Environment.TickCount);
+		}
+
+		private void OnHostStartup(object sender, RoutedEventArgs e) {
+			if (server == null) {
+				int port = numericHostPort.Value;
+				server = new Server();
+				server.MessageReceived += OnHostMessageReceived;
+				server.ClientConnected += OnHostClientConnected;
+				server.ClientConnectionLost += OnHostClientConnectionLost;
+				server.Error += OnHostError;
+				if (!server.Start(port)) {
+					TriggerMessageBox.Show(this, MessageIcon.Warning, "Failed to start host server!", "Host Error");
+					server = null;
+				}
+				else {
+					comboBoxSyncType.IsEnabled = false;
+					textBoxHostPassword.IsEnabled = false;
+					numericHostPort.IsEnabled = false;
+					numericHostWait.IsEnabled = true;
+					textBoxHostNextSong.IsEnabled = true;
+					buttonHostAssignSong.IsEnabled = true;
+					listViewClients.IsEnabled = true;
+					buttonHostStartup.Content = "Shutdown";
+					syncWatch = new Stopwatch();
+					syncWatch.Start();
+					password = textBoxHostPassword.Text;
+				}
+			}
+			else {
+				server.Stop();
+				server = null;
+				userList.Clear();
+				userMap.Clear();
+				listViewClients.Items.Clear();
+
+				comboBoxSyncType.IsEnabled = true;
+				textBoxHostPassword.IsEnabled = true;
+				numericHostPort.IsEnabled = true;
+				numericHostWait.IsEnabled = false;
+				textBoxHostNextSong.IsEnabled = false;
+				buttonHostAssignSong.IsEnabled = false;
+				listViewClients.IsEnabled = false;
+				buttonHostStartup.Content = "Startup";
+				textBoxHostNextSong.Text = "";
+				if (syncWatch != null) {
+					syncWatch.Stop();
+					syncWatch = null;
+				}
+			}
+		}
+
+		private void OnHostAssignSong(object sender, RoutedEventArgs e) {
+			server.Send(new StringCommand(Commands.AssingSong, Server.ServerName, textBoxHostNextSong.Text));
+			for (int i = 0; i < userList.Count; i++) {
+				userList[i].Ready = ReadyStates.NotReady;
+				((HostClientListViewItem)listViewClients.Items[i]).Ready = userList[i].Ready;
+			}
+		}
+		
+		private void OnHostMessageReceived(Server server, ServerConnection connection, byte[] data, int size) {
+			switch (Command.GetCommandType(data, data.Length)) {
+				case Commands.Login: {
+						var cmd = new StringCommand(data, data.Length);
+						connection.User.IPAddress = connection.IPAddress;
+						connection.User.Port = connection.Port;
+						connection.User.Name = cmd.Name;
+						if (cmd.Text != password) {
+							server.SendTo(new Command(Commands.InvalidPassword, cmd.Name), cmd.Name);
+						}
+						else if (userMap.ContainsKey(cmd.Name)) {
+							server.SendTo(new Command(Commands.NameTaken, cmd.Name), cmd.Name);
+						}
+						else {
+							connection.IsLoggedIn = true;
+							AddUser(connection.User);
+							server.SendTo(new Command(Commands.AcceptedUser, cmd.Name), cmd.Name);
+						}
+						break;
+					}
+				case Commands.Ready: {
+						connection.User.Ready = ReadyStates.Ready;
+						int index = userList.IndexOf(connection.User);
+						if (index != -1) {
+							Dispatcher.Invoke(() => {
+								((HostClientListViewItem)listViewClients.Items[index]).Ready = ReadyStates.Ready;
+							});
+						}
+						break;
+					}
+				case Commands.NotReady: {
+						connection.User.Ready = ReadyStates.NotReady;
+						int index = userList.IndexOf(connection.User);
+						if (index != -1) {
+							Dispatcher.Invoke(() => {
+								((HostClientListViewItem)listViewClients.Items[index]).Ready = ReadyStates.NotReady;
+							});
+						}
+						break;
+					}
+			}
+		}
+		private void OnHostClientConnected(Server server, ServerConnection connection) {
+			
+		}
+		private void OnHostClientConnectionLost(Server server, ServerConnection connection) {
+			RemoveUser(connection.Username);
+		}
+		private void OnHostError(Server server, Exception e) {
+			var result = TriggerMessageBox.Show(this, MessageIcon.Error, "A host error occurred. Would you like to see the error?", "Host Error", MessageBoxButton.YesNo);
+			if (result == MessageBoxResult.Yes)
+				ErrorMessageBox.Show(e);
+		}
+
+		private void HostPlay() {
+			DateTime playTime = CalculateSyncDateTime();
+			playTime = playTime.AddMilliseconds(numericHostWait.Value);
+			server.IsPaused = true;
+
+			foreach (User user in userList) {
+				server.SendToNow(new TimeCommand(Commands.PlaySong, Server.ServerName, playTime), user.Name);
+			}
+			while (CalculateSyncDateTime()/*DateTime.UtcNow*/ < playTime) {
+				Thread.Sleep(1);
+			}
+
+			Play();
+		}
+
+		private void HostStop() {
+			server.IsPaused = false;
+			server.Send(new Command(Commands.StopSong, Server.ServerName));
+			Stop();
+		}
+
+		private void HostSongFinished() {
+			server.IsPaused = false;
+		}
+
+		private void AddUser(User user) {
+			user.Ready = ReadyStates.NotReady;
+			Dispatcher.Invoke(() => {
+				userMap.Add(user.Name, user);
+				userList.Add(user);
+				listViewClients.Items.Add(new HostClientListViewItem(user.Name));
+			});
+		}
+
+		private void RemoveUser(string username) {
+			if (userMap.ContainsKey(username)) {
+				int index = userList.FindIndex(u => u.Name == username);
+				userMap.Remove(username);
+				userList.RemoveAt(index);
+				Dispatcher.Invoke(() => {
+					listViewClients.Items.RemoveAt(index);
+				});
+			}
+		}
+
+		#endregion
+
+		#region Client
+		private ClientConnection client;
+		private User clientUser;
+		private bool clientReady;
+		private Timer clientTimeout;
+		private bool clientAccepted;
+		private int clientTimeOffset;
+
+		private void InitClient() {
+			client = null;
+			clientUser = new User();
+			clientReady = false;
+			clientTimeout = new Timer(4000);
+			clientTimeout.Elapsed += OnClientConnectingTimeout;
+			clientTimeout.AutoReset = false;
+			clientAccepted = false;
+			clientTimeOffset = 0;
+
+			gridSyncClient.Visibility = Visibility.Visible;
+			buttonClientReady.IsEnabled = false;
+			textBoxClientNextSong.IsEnabled = false;
+			numericClientPlayOffset.IsEnabled = false;
+		}
+
+		private void OnClientConnect(object sender, RoutedEventArgs e) {
+			if (client == null) {
+				if (textBoxClientUsername.Text == "") {
+					TriggerMessageBox.Show(this, MessageIcon.Warning, "Cannot connect with an empty username!", "Invalid Username");
+					return;
+				}
+				IPAddress ip = (textBoxClientIP.Text == "" ? IPAddress.Loopback : IPAddress.Parse(textBoxClientIP.Text));
+				int port = numericClientPort.Value;
+				client = new ClientConnection();
+				client.MessageReceived += OnClientMessageReceived;
+				client.ConnectionLost += OnClientConnectionLost;
+				clientUser.Name = textBoxClientUsername.Text;
+				if (!client.Connect(ip, port)) {
+					TriggerMessageBox.Show(this, MessageIcon.Warning, "Failed to connect to server!", "Connection Failed");
+					client = null;
+				}
+				else {
+					comboBoxSyncType.IsEnabled = false;
+					textBoxClientIP.IsEnabled = false;
+					numericClientPort.IsEnabled = false;
+					textBoxClientUsername.IsEnabled = false;
+					textBoxClientPassword.IsEnabled = false;
+					textBoxClientNextSong.IsEnabled = false;
+					buttonClientConnect.IsEnabled = false;
+					buttonClientConnect.Content = "Connecting...";
+					clientTimeout.Start();
+
+					syncWatch = new Stopwatch();
+					syncWatch.Start();
+					client.Send(new StringCommand(Commands.Login, clientUser.Name, textBoxClientPassword.Text));
+				}
+			}
+			else {
+				client.Disconnect();
+				client = null;
+				clientUser = new User();
+
+				Dispatcher.Invoke(() => {
+					comboBoxSyncType.IsEnabled = true;
+					textBoxClientIP.IsEnabled = true;
+					numericClientPort.IsEnabled = true;
+					textBoxClientUsername.IsEnabled = true;
+					textBoxClientPassword.IsEnabled = true;
+					buttonClientReady.IsEnabled = false;
+					textBoxClientNextSong.IsEnabled = false;
+					buttonClientConnect.IsEnabled = true;
+					numericClientPlayOffset.IsEnabled = false;
+					buttonClientReady.Content = "Ready";
+					buttonClientConnect.Content = "Connect";
+					textBoxClientNextSong.Text = "";
+				});
+				clientAccepted = false;
+				clientReady = false;
+				if (syncWatch != null) {
+					syncWatch.Stop();
+					syncWatch = null;
+				}
+			}
+		}
+
+		private void OnClientReady(object sender, RoutedEventArgs e) {
+			if (!clientReady) {
+				clientReady = true;
+				buttonClientReady.Content = "Not Ready";
+				client.Send(new Command(Commands.Ready, clientUser.Name));
+			}
+			else {
+				clientReady = false;
+				buttonClientReady.Content = "Ready";
+				client.Send(new Command(Commands.NotReady, clientUser.Name));
+			}
+		}
+
+		private void OnClientConnectingTimeout(object sender, ElapsedEventArgs e) {
+			if (!clientAccepted && client != null) {
+				Dispatcher.Invoke(() => {
+					OnClientConnect(null, new RoutedEventArgs());
+					TriggerMessageBox.Show(this, MessageIcon.Warning, "Failed to login!", "Login Failed");
+				});
+			}
+		}
+
+		private void OnClientMessageReceived(ClientConnection client, byte[] data, int size) {
+			switch (Command.GetCommandType(data, data.Length)) {
+				case Commands.InvalidPassword: {
+						if (!clientAccepted) {
+							Dispatcher.Invoke(() => {
+								OnClientConnect(null, new RoutedEventArgs());
+								if (textBoxClientPassword.Text.Length == 0)
+									TriggerMessageBox.Show(this, MessageIcon.Warning, "A password is required.", "Password Required");
+								else
+									TriggerMessageBox.Show(this, MessageIcon.Warning, "The chosen password is incorrect.", "Invalid Password");
+							});
+						}
+						break;
+					}
+				case Commands.NameTaken: {
+						if (!clientAccepted) {
+							Dispatcher.Invoke(() => {
+								OnClientConnect(null, new RoutedEventArgs());
+								TriggerMessageBox.Show(this, MessageIcon.Warning, "The chosen username is already in use.", "Name Taken");
+							});
+						}
+						break;
+					}
+				case Commands.AcceptedUser: {
+						if (!clientAccepted) {
+							clientAccepted = true;
+							// Finish logging in
+							clientTimeout.Stop();
+							Dispatcher.Invoke(() => {
+								textBoxClientNextSong.IsEnabled = true;
+								numericClientPlayOffset.IsEnabled = true;
+								buttonClientReady.IsEnabled = true;
+								buttonClientConnect.IsEnabled = true;
+								buttonClientConnect.Content = "Disconnect";
+							});
+						}
+						break;
+					}
+				case Commands.AssingSong: {
+						if (clientAccepted) {
+							clientReady = false;
+							var cmd = new StringCommand(data, data.Length);
+							Dispatcher.Invoke(() => {
+								textBoxClientNextSong.Text = cmd.Text;
+								buttonClientReady.Content = "Ready";
+							});
+						}
+						break;
+					}
+				case Commands.PlaySong: {
+						if (clientAccepted && clientReady) {
+							var cmd = new TimeCommand(data, size);
+							DateTime playTime = cmd.DateTime.AddMilliseconds(clientTimeOffset);
+							client.IsPlaying = true;
+							TimeSpan difference = playTime - CalculateSyncDateTime();
+							while (difference.TotalMilliseconds > 0) {
+								if (difference.TotalMilliseconds >= 500) {
+									Dispatcher.Invoke(() => {
+										labelClientPlaying.Content = "Playing in " + MillisecondsToString((int)difference.TotalMilliseconds, false, true);
+									});
+									Thread.Sleep(10);
+								}
+								else {
+									Thread.Sleep(1);
+								}
+								difference = playTime - CalculateSyncDateTime();
+							}
+
+							Play();
+							Dispatcher.Invoke(() => {
+								labelClientPlaying.Content = "Playing now";
+							});
+						}
+						break;
+					}
+				case Commands.StopSong: {
+						if (clientAccepted) {
+							if (client.IsPlaying) {
+								Stop();
+								client.IsPlaying = false;
+								Dispatcher.Invoke(() => {
+									labelClientPlaying.Content = "Stopped";
+								});
+							}
+						}
+						break;
+					}
+			}
+		}
+		private void OnClientConnectionLost(ClientConnection client) {
+			OnClientConnect(null, new RoutedEventArgs());
+		}
+
+		private void ClientSongFinished() {
+			client.IsPlaying = false;
+			Dispatcher.Invoke(() => {
+				labelClientPlaying.Content = "Stopped";
+			});
+		}
+
+		private void OnClientTimeOffsetChanged(object sender, RoutedEventArgs e) {
+			if (!loaded)
+				return;
+
+			clientTimeOffset = numericClientPlayOffset.Value;
+		}
+
+		#endregion
+
+		#endregion
 	}
 }

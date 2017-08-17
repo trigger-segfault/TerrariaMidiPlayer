@@ -17,146 +17,12 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Keys = System.Windows.Forms.Keys;
 
-namespace TerrariaMidiPlayer {
-
-
-	public struct Keybind {
-
-		public static Keybind None {
-			get { return new Keybind(Key.None); }
-		}
-
-		public Key Key;
-		public ModifierKeys Modifiers;
-
-		public Keybind(Key key) {
-			Key = key;
-			Modifiers = ModifierKeys.None;
-		}
-		public Keybind(Key key, ModifierKeys modifiers) {
-			Key = key;
-			Modifiers = modifiers;
-		}
-		public bool IsDown(System.Windows.Forms.KeyEventArgs e) {
-			Keys mods = Keys.None;
-			if (Modifiers.HasFlag(ModifierKeys.Control))
-				mods |= Keys.Control;
-			if (Modifiers.HasFlag(ModifierKeys.Shift))
-				mods |= Keys.Shift;
-			if (Modifiers.HasFlag(ModifierKeys.Alt))
-				mods |= Keys.Alt;
-			return (e.KeyCode == (Keys)KeyInterop.VirtualKeyFromKey(Key) && e.Modifiers == mods);
-		}
-
-		public static bool operator ==(Keybind a, Keybind b) {
-			return (a.Key == b.Key && (a.Modifiers == b.Modifiers || (a.Key == Key.None && b.Key == Key.None)));
-		}
-		public static bool operator !=(Keybind a, Keybind b) {
-			return (a.Key != b.Key || (a.Modifiers != b.Modifiers && (a.Key != Key.None || b.Key != Key.None)));
-		}
-
-		public override string ToString() {
-			string str = "";
-			if (Modifiers.HasFlag(ModifierKeys.Control))
-				str += "Ctrl+";
-			if (Modifiers.HasFlag(ModifierKeys.Shift))
-				str += "Shift+";
-			if (Modifiers.HasFlag(ModifierKeys.Alt))
-				str += "Alt+";
-			str += Key.ToString();
-			return str;
-		}
-
-		public static bool TryParse(string s, out Keybind keybind) {
-			Key key = Key.None;
-			ModifierKeys modifiers = ModifierKeys.None;
-			for (int i = 0; i < 3; i++) {
-				if (!modifiers.HasFlag(ModifierKeys.Control) && s.StartsWith("Ctrl+", StringComparison.InvariantCultureIgnoreCase)) {
-					modifiers |= ModifierKeys.Control;
-					s = s.Substring(5);
-				}
-				if (!modifiers.HasFlag(ModifierKeys.Shift) && s.StartsWith("Shift+", StringComparison.InvariantCultureIgnoreCase)) {
-					modifiers |= ModifierKeys.Shift;
-					s = s.Substring(6);
-				}
-				if (!modifiers.HasFlag(ModifierKeys.Alt) && s.StartsWith("Alt+", StringComparison.InvariantCultureIgnoreCase)) {
-					modifiers |= ModifierKeys.Alt;
-					s = s.Substring(4);
-				}
-			}
-			if (Enum.TryParse<Key>(s, out key)) {
-				keybind = new Keybind(key, modifiers);
-				return true;
-			}
-			keybind = Keybind.None;
-			return false;
-		}
-	}
+namespace TerrariaMidiPlayer.Controls {
 
 	/// <summary>
 	/// Interaction logic for KeybindReader.xaml
 	/// </summary>
 	public partial class KeybindReader : UserControl {
-
-		public enum MapType : uint {
-			MAPVK_VK_TO_VSC = 0x0,
-			MAPVK_VSC_TO_VK = 0x1,
-			MAPVK_VK_TO_CHAR = 0x2,
-			MAPVK_VSC_TO_VK_EX = 0x3,
-		}
-
-		[DllImport("user32.dll")]
-		public static extern int ToUnicode(
-			uint wVirtKey,
-			uint wScanCode,
-			byte[] lpKeyState,
-			[Out, MarshalAs(UnmanagedType.LPWStr, SizeParamIndex = 4)]
-			StringBuilder pwszBuff,
-			int cchBuff,
-			uint wFlags);
-
-		[DllImport("user32.dll")]
-		public static extern bool GetKeyboardState(byte[] lpKeyState);
-
-		[DllImport("user32.dll")]
-		public static extern uint MapVirtualKey(uint uCode, MapType uMapType);
-
-		public static char GetCharFromKey(Key key) {
-			char ch = ' ';
-
-			int virtualKey = KeyInterop.VirtualKeyFromKey(key);
-			byte[] keyboardState = new byte[256];
-			GetKeyboardState(keyboardState);
-			keyboardState[(int)System.Windows.Forms.Keys.ControlKey] = 0;
-			keyboardState[(int)System.Windows.Forms.Keys.ShiftKey] = 0;
-			keyboardState[(int)System.Windows.Forms.Keys.Menu] = 0;
-			keyboardState[(int)Key.LeftCtrl] = 0;
-			keyboardState[(int)Key.RightCtrl] = 0;
-			keyboardState[(int)Key.LeftShift] = 0;
-			keyboardState[(int)Key.RightShift] = 0;
-			keyboardState[(int)Key.LeftAlt] = 0;
-			keyboardState[(int)Key.RightAlt] = 0;
-
-			uint scanCode = MapVirtualKey((uint)virtualKey, MapType.MAPVK_VK_TO_VSC);
-			StringBuilder stringBuilder = new StringBuilder(2);
-
-			int result = ToUnicode((uint)virtualKey, scanCode, keyboardState, stringBuilder, stringBuilder.Capacity, 0);
-			switch (result) {
-				case -1:
-					break;
-				case 0:
-					break;
-				case 1: {
-						ch = stringBuilder[0];
-						break;
-					}
-				default: {
-						ch = stringBuilder[0];
-						break;
-					}
-			}
-			return ch;
-		}
 
 		Key key;
 		ModifierKeys modifiers;
@@ -167,7 +33,6 @@ namespace TerrariaMidiPlayer {
 		bool rightShift;
 		bool leftAlt;
 		bool rightAlt;
-		const string UnsetText = "<No Keybind>";
 
 		
 		public static readonly RoutedEvent KeybindChangedEvent = EventManager.RegisterRoutedEvent("KeybindChanged", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(KeybindReader));
@@ -179,7 +44,7 @@ namespace TerrariaMidiPlayer {
 			key = Key.None;
 			modifiers = ModifierKeys.None;
 			newKey = Key.None;
-			buttonKeybind.Content = UnsetText;
+			buttonKeybind.Content = Keybind.None.ToCharString();
 
 			leftCtrl = false;
 			rightCtrl = false;
@@ -190,54 +55,9 @@ namespace TerrariaMidiPlayer {
 		}
 
 		private void UpdateKeybind() {
-			if (key == Key.None) {
-				buttonKeybind.Content = UnsetText;
-			}
-			else {
-				System.Windows.Forms.Keys formsKey = (System.Windows.Forms.Keys)key;
-				string displayString = "";
-				if (modifiers.HasFlag(ModifierKeys.Control)) {
-					formsKey |= System.Windows.Forms.Keys.Control;
-					displayString += "Ctrl+";
-				}
-				if (modifiers.HasFlag(ModifierKeys.Shift)) {
-					formsKey |= System.Windows.Forms.Keys.Shift;
-					displayString += "Shift+";
-				}
-				if (modifiers.HasFlag(ModifierKeys.Alt)) {
-					formsKey |= System.Windows.Forms.Keys.Alt;
-					displayString += "Alt+";
-				}
-
-				char mappedChar = Char.ToUpper(GetCharFromKey(key));
-				if (key >= Key.NumPad0 && key <= Key.NumPad9)
-					mappedChar = '\0';
-				if (mappedChar > 32) { // Yes, exclude space
-					displayString += mappedChar;
-				}
-				else if (key == Key.System) {
-					displayString += "Alt";
-				}
-				else {
-					displayString += key.ToString();
-				}
-				//string keyDisplayString = TypeDescriptor.GetConverter(typeof(System.Windows.Forms.Keys)).ConvertToString(formsKey);
-				buttonKeybind.Content = displayString;
-			}
+			buttonKeybind.Content = new Keybind(key, modifiers).ToCharString();
 			buttonKeybind.IsChecked = false;
 		}
-
-		/*public KeyGesture Keybind {
-			get { return keybind; }
-			set {
-				buttonKeybind.IsChecked = false;
-				keybind = value;
-				if (keybind != null)
-					buttonKeybind.Content = keybind.GetDisplayStringForCulture(CultureInfo.CurrentCulture);
-				else
-					buttonKeybind.Content = UnsetText;
-			}
-		}*/
 		public Key Key {
 			get { return key; }
 			set {
@@ -254,7 +74,6 @@ namespace TerrariaMidiPlayer {
 				UpdateKeybind();
 			}
 		}
-
 		public Keybind Keybind {
 			get { return new Keybind(key, modifiers); }
 			set {

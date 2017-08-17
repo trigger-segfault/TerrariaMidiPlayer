@@ -13,9 +13,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace TerrariaMidiPlayer {
+namespace TerrariaMidiPlayer.Controls {
 	/// <summary>
-	/// Interaction logic for ProjectileControl.xaml
+	/// Interaction logic for ProjectileControl2.xaml
 	/// </summary>
 	public partial class ProjectileControl : UserControl {
 		const double Radius = 40;
@@ -56,7 +56,7 @@ namespace TerrariaMidiPlayer {
 		public static readonly RoutedEvent ProjectilesChangedEvent = EventManager.RegisterRoutedEvent("ProjectilesChanged", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(ProjectileControl));
 
 		public event RoutedEventHandler ProjectilesChanged;
-		
+
 		private void OnLoaded(object sender, RoutedEventArgs e) {
 			loaded = true;
 		}

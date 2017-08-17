@@ -66,7 +66,7 @@ namespace Sanford.Multimedia.Midi
             {
                 yield return enumerator.Current.AbsoluteTicks;
 
-                dispatcher.Dispatch(enumerator.Current.MidiMessage);
+                dispatcher.Dispatch(this, enumerator.Current.MidiMessage);
             }
         }
 
@@ -98,7 +98,7 @@ namespace Sanford.Multimedia.Midi
                 }
                 else if(message.MessageType == MessageType.Meta)
                 {
-                    dispatcher.Dispatch(message);
+                    dispatcher.Dispatch(this, message);
                 }
 
                 notFinished = enumerator.MoveNext();
@@ -121,7 +121,7 @@ namespace Sanford.Multimedia.Midi
 
                 while(notFinished && enumerator.Current.AbsoluteTicks == ticks)
                 {
-                    dispatcher.Dispatch(enumerator.Current.MidiMessage);
+                    dispatcher.Dispatch(this, enumerator.Current.MidiMessage);
 
                     notFinished = enumerator.MoveNext();    
                 }

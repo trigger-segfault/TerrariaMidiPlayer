@@ -88,7 +88,7 @@ namespace Sanford.Multimedia.Midi
                 cmBuilder.Build();
 
                 OnMessageReceived(cmBuilder.Result);
-                OnChannelMessageReceived(new ChannelMessageEventArgs(cmBuilder.Result));
+                OnChannelMessageReceived(new ChannelMessageEventArgs(null, cmBuilder.Result));
             }
             else if (status == (int)SysCommonType.MidiTimeCode ||
                    status == (int)SysCommonType.SongPositionPointer ||

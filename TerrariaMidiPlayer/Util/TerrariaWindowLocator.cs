@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace TerrariaMidiPlayer {
+namespace TerrariaMidiPlayer.Util {
 	public static class TerrariaWindowLocator {
 
 		[StructLayout(LayoutKind.Sequential)]
@@ -104,10 +104,9 @@ namespace TerrariaMidiPlayer {
 			get { return focus; }
 		}
 
-		public static void Update() {
-			Stopwatch watch = new Stopwatch();
-			watch.Start();
-			process = Process.GetProcessesByName("Terraria").FirstOrDefault();
+		public static void Update(bool fullUpdate) {
+			if (fullUpdate)
+				process = Process.GetProcessesByName("Terraria").FirstOrDefault();
 			if (process != null) {
 				RECT lpRect = new RECT();
 				POINT lpPoint = new POINT();
@@ -122,7 +121,6 @@ namespace TerrariaMidiPlayer {
 				clientArea = new Rect(0, 0, 0, 0);
 				focus = false;
 			}
-			watch.Stop();
 		}
 
 		//https://stackoverflow.com/questions/2315561/correct-way-in-net-to-switch-the-focus-to-another-application?answertab=oldest#tab-top
@@ -147,6 +145,11 @@ namespace TerrariaMidiPlayer {
 				ScreenToClient(hWnd, ref lpPoint);
 				clientArea.Location = new Point(-lpPoint.x, -lpPoint.y);
 			}
+		}
+
+		public static bool CheckIfFocused() {
+			Update(false);
+			return HasFocus;
 		}
 	}
 }

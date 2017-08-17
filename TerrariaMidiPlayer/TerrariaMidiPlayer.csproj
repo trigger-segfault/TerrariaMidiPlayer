@@ -89,43 +89,66 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="ChangeKeybindsDialog.xaml.cs">
+    <Compile Include="Controls\ProjectileControl.xaml.cs">
+      <DependentUpon>ProjectileControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Keybind.cs" />
+    <Compile Include="Windows\AboutWindow.xaml.cs">
+      <DependentUpon>AboutWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\ChangeKeybindsDialog.xaml.cs">
       <DependentUpon>ChangeKeybindsDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="EditNameDialog.xaml.cs">
+    <Compile Include="Windows\CreditsWindow.xaml.cs">
+      <DependentUpon>CreditsWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\EditNameDialog.xaml.cs">
       <DependentUpon>EditNameDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ErrorMessageBox.xaml.cs">
+    <Compile Include="Windows\ErrorMessageBox.xaml.cs">
       <DependentUpon>ErrorMessageBox.xaml</DependentUpon>
     </Compile>
-    <Compile Include="KeybindReader.xaml.cs">
+    <Compile Include="Controls\HostClientListViewItem.cs" />
+    <Compile Include="Controls\KeybindReader.xaml.cs">
       <DependentUpon>KeybindReader.xaml</DependentUpon>
     </Compile>
     <Compile Include="Midi.cs" />
-    <Compile Include="NumericUpDown.xaml.cs">
+    <Compile Include="Controls\NumericUpDown.xaml.cs">
       <DependentUpon>NumericUpDown.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ProjectileControl.xaml.cs">
-      <DependentUpon>ProjectileControl.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Song.cs" />
-    <Compile Include="TerrariaWindowLocator.cs" />
-    <Compile Include="TriggerMessageBox.xaml.cs">
+    <Compile Include="Syncing\ClientConnection.cs" />
+    <Compile Include="Syncing\Command.cs" />
+    <Compile Include="Syncing\Server.cs" />
+    <Compile Include="Syncing\ServerConnection.cs" />
+    <Compile Include="Util\TerrariaWindowLocator.cs" />
+    <Compile Include="Windows\TriggerMessageBox.xaml.cs">
       <DependentUpon>TriggerMessageBox.xaml</DependentUpon>
     </Compile>
-    <Page Include="ChangeKeybindsDialog.xaml">
+    <Page Include="Controls\ProjectileControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="EditNameDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="ErrorMessageBox.xaml">
+    <Page Include="Windows\AboutWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="KeybindReader.xaml">
+    <Page Include="Windows\ChangeKeybindsDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\CreditsWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Windows\EditNameDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\ErrorMessageBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\KeybindReader.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -137,20 +160,16 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="MouseControl.cs" />
+    <Compile Include="Util\MouseControl.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="NumericUpDown.xaml">
+    <Page Include="Controls\NumericUpDown.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="ProjectileControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="TriggerMessageBox.xaml">
+    <Page Include="Windows\TriggerMessageBox.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -199,15 +218,6 @@
     <Resource Include="Resources\Icons\About.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Resources\Icons\Changelog.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\Icons\ChannelAdd.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\Icons\ChannelRemove.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Resources\Icons\Empty.png" />
   </ItemGroup>
   <ItemGroup>
@@ -226,12 +236,6 @@
     <Resource Include="Resources\Icons\Overlay.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Resources\Icons\PartAdd.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\Icons\PartRemove.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Resources\Icons\Pause.png" />
   </ItemGroup>
   <ItemGroup>
@@ -239,9 +243,6 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\Icons\Stop.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\Icons\Time.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\Icons\AppError.ico" />
@@ -277,13 +278,28 @@
     <Resource Include="Resources\Icons\EditName.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Resources\Icons\MidiEdit.png" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Sanford\Sanford.Multimedia.Midi.csproj">
       <Project>{4269c72a-8d3a-4737-8f89-72eaa33ea9e1}</Project>
       <Name>Sanford.Multimedia.Midi</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Icons\EditNameUnflipped.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Logo112.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Icons\HarpIcon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Icons\TerrariaIcon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Icons\Help.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Icons\SaveConfig.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

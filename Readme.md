@@ -3,7 +3,7 @@ A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi
 
 ![Window Preview](http://i.imgur.com/DBoXmF4.png)
 
-### [Wiki](https://github.com/trigger-death/TerrariaMidiPlayer/wiki) | [Credits](https://github.com/trigger-death/TerrariaMidiPlayer/wiki/Credits)
+### [Wiki](https://github.com/trigger-death/TerrariaMidiPlayer/wiki) | [Credits](https://github.com/trigger-death/TerrariaMidiPlayer/wiki/Credits) | [Image Album](http://imgur.com/a/LtTvj)
 
 ## Requirements for Running
 * .NET Framwork 4.5.2 | [Offline Installer](https://www.microsoft.com/en-us/download/details.aspx?id=42642) | [Web Installer](https://www.microsoft.com/en-us/download/details.aspx?id=42643)

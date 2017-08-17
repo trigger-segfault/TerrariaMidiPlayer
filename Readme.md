@@ -9,6 +9,9 @@ A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi
 * .NET Framwork 4.5.2 | [Offline Installer](https://www.microsoft.com/en-us/download/details.aspx?id=42642) | [Web Installer](https://www.microsoft.com/en-us/download/details.aspx?id=42643)
 * Windows 7 or later
 * Terraria for PC <sup>(will not play midis when it's not running)</sup>
+* Terraria zoom setting must be at 100%
+
+![100% Zoom Required](http://i.imgur.com/hZ9tm0U.png)
 
 ## Features
 * Automatically attempts to fit notes within Terraria's two octaves.

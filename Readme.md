@@ -42,4 +42,4 @@ A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi
 ## Youtube Previews
 Below are some of the videos that have been recorded during the developement process of Terraria Midi Player.
 
-[![Shake It!](http://i.imgur.com/oyYEk98.png)](https://www.youtube.com/watch?v=NsOI2k8nKbQ) [![Through the Fire and Flames](http://i.imgur.com/AAtdCer.png)](https://www.youtube.com/watch?v=BAXK9uwE_BI)
+[![Shake It!](http://i.imgur.com/GCdPcJm.png)](https://www.youtube.com/watch?v=NsOI2k8nKbQ) [![Through the Fire and Flames](http://i.imgur.com/sHypeWL.png)](https://www.youtube.com/watch?v=BAXK9uwE_BI) [![Tal Tal Heights](http://i.imgur.com/NNsoJCG.png)](https://www.youtube.com/watch?v=rP4O6BsBEh0)

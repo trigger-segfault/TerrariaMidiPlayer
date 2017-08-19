@@ -42,12 +42,12 @@ namespace TerrariaMidiPlayer.Syncing {
 	public class Server {
 
 		public const string ServerName = "<Server>";
-		
+
 		private const int IdleTime = 50;
 		private const int PauseIdleTime = 500;
-		private const int MaxSendAttempts = 3;
+		private const int MaxSendAttempts = 8;
 		private const int MaxCallbackThreads = 10;
-		private const int VerifyConnectionInterval = 100;
+		private const int VerifyConnectionInterval = 1000;
 
 		private List<ServerConnection> connections = new List<ServerConnection>();
 		private TcpListener listener = null;
@@ -129,6 +129,8 @@ namespace TerrariaMidiPlayer.Syncing {
 						}
 						listenerThread = null;
 					}
+					catch (ThreadInterruptedException) { }
+					catch (ThreadAbortException) { }
 					catch (SecurityException) { }
 					try {
 						if (senderThread.IsAlive) {
@@ -141,6 +143,8 @@ namespace TerrariaMidiPlayer.Syncing {
 						}
 						senderThread = null;
 					}
+					catch (ThreadInterruptedException) { }
+					catch (ThreadAbortException) { }
 					catch (SecurityException) { }
 					foreach (ServerConnection connection in connections) {
 						while (connection.ProcessOutgoing(MaxSendAttempts)) ;
@@ -161,95 +165,96 @@ namespace TerrariaMidiPlayer.Syncing {
 		}
 
 		private void SenderThread() {
-			while (IsRunning) {
-				if (paused) {
-					try { Thread.Sleep(PauseIdleTime); }
-					catch (ThreadAbortException) { }
-					catch (ThreadInterruptedException) { }
-					continue;
-				}
-				try {
-					bool moreWork = false;
-					for (int i = 0; i < connections.Count; i++) {
-						if (connections[i].CallbackThread != null && connections[i].CanStartNewThread) {
-							try {
-								connections[i].CallbackThread = null;
-								lock (activeThreadsLock) {
-									activeThreads--;
+			try {
+				while (IsRunning) {
+					if (paused) {
+						Thread.Sleep(PauseIdleTime);
+					}
+					try {
+						bool moreWork = false;
+						for (int i = 0; i < connections.Count; i++) {
+							if (connections[i].CallbackThread != null && connections[i].CanStartNewThread) {
+								//try {
+									connections[i].CallbackThread = null;
+									lock (activeThreadsLock) {
+										activeThreads--;
+									}
+								//}
+								//catch (Exception e) { }
+							}
+
+							if (connections[i].IsMarkedForRemoval) {
+								if (connections[i].CanStartNewThread) {
+									lock (connections) {
+										connections[i].ForceDisconnect();
+										if (connections[i].CallbackThread != null)
+											activeThreads--;
+										connections.RemoveAt(i);
+										i--;
+									}
 								}
 							}
-							catch (Exception e) { }
-						}
+							else if (connections[i].CallbackThread != null) {
 
-						if (connections[i].IsMarkedForRemoval) {
-							if (!connections[i].HasMoreWork) {
+							}
+							else if (connections[i].IsConnected &&
+									(connections[i].LastVerifyTime.AddMilliseconds(VerifyConnectionInterval) > DateTime.UtcNow ||
+									connections[i].VerifyConnection())) {
+								moreWork = moreWork || ProcessConnection(connections[i]);
+							}
+							else if (ClientConnectionLost != null) {
+								if (/*activeThreads < MaxCallbackThreads && */connections[i].CanStartNewThread) {
+									/*lock (activeThreadsLock) {
+										activeThreads++;
+									}*/
+									ServerConnection connection = connections[i];
+									//connections[i].CallbackThread = new Thread(() => {
+									ClientConnectionLost?.Invoke(this, connection);
+									//});
+									//connections[i].CallbackThread.Start();
+									connections[i].IsMarkedForRemoval = true;
+									Thread.Yield();
+								}
+							}
+							else {
+								connections[i].IsMarkedForRemoval = true;
 								lock (connections) {
+									if (connections[i].CallbackThread != null)
+										activeThreads--;
 									connections[i].ForceDisconnect();
 									connections.RemoveAt(i);
 									i--;
 								}
 							}
 						}
-						else if (connections[i].CallbackThread != null) {
 
-						}
-						else if (connections[i].IsConnected &&
-								(connections[i].LastVerifyTime.AddMilliseconds(VerifyConnectionInterval) > DateTime.UtcNow ||
-								connections[i].VerifyConnection())) {
-							moreWork = moreWork || ProcessConnection(connections[i]);
-						}
-						else {
-							if (!connections[i].SafelyDisconnected && ClientConnectionLost != null &&
-								activeThreads < MaxCallbackThreads && connections[i].CanStartNewThread) {
-								lock (activeThreadsLock) {
-									activeThreads++;
-								}
-								ServerConnection connection = connections[i];
-								connections[i].CallbackThread = new Thread(() => {
-									ClientConnectionLost?.Invoke(this, connection);
-								});
-								connections[i].CallbackThread.Start();
-								connections[i].IsMarkedForRemoval = true;
-								Thread.Yield();
-							}
-							else {
-								connections[i].IsMarkedForRemoval = true;
-								lock (connections) {
-									connections.RemoveAt(i);
-									i--;
-								}
-							}
-						}
-					}
-
-					if (!moreWork) {
-						Thread.Yield();
-						lock (sem) {
-							foreach (ServerConnection connection in connections) {
-								if (connection.HasMoreWork) {
-									moreWork = true;
-									break;
-								}
-							}
-						}
 						if (!moreWork) {
-							waiting = true;
-							sem.Wait(IdleTime);
-							waiting = false;
+							Thread.Yield();
+							lock (sem) {
+								foreach (ServerConnection connection in connections) {
+									if (connection.HasMoreWork) {
+										moreWork = true;
+										break;
+									}
+								}
+							}
+							if (!moreWork) {
+								waiting = true;
+								sem.Wait(IdleTime);
+								waiting = false;
+							}
 						}
 					}
-				}
-				catch (ThreadAbortException) { }
-				catch (ThreadInterruptedException) { } //thread is interrupted when we quit
-				catch (Exception e) {
-					if (IsRunning) {
-						Error?.Invoke(this, e);
+					catch (SocketException ex) {
+						if (IsRunning) {
+							Error?.Invoke(this, ex);
+						}
 					}
+					Thread.Sleep(precision ? 1 : IdleTime);
 				}
-				try { Thread.Sleep(precision ? 1 : IdleTime); }
-				catch (ThreadAbortException) { }
-				catch (ThreadInterruptedException) { }
 			}
+			catch (ThreadAbortException) { }
+			catch (ThreadInterruptedException) { }
 		}
 
 		private bool ProcessConnection(ServerConnection connection) {
@@ -276,44 +281,49 @@ namespace TerrariaMidiPlayer.Syncing {
 		}
 
 		private void ListenerThread() {
-			while (IsRunning) {
-				if (paused) {
-					try { Thread.Sleep(PauseIdleTime); }
-					catch (ThreadAbortException) { }
-					catch (ThreadInterruptedException) { }
-					continue;
-				}
-				try {
-					if (listener.Pending()) {
-						TcpClient client = listener.AcceptTcpClient();
-						ServerConnection connection = new ServerConnection(client);
-						if (ClientConnected != null) {
-							lock (activeThreadsLock) {
-								activeThreads++;
+			try {
+				while (IsRunning) {
+					if (paused) {
+						Thread.Sleep(PauseIdleTime);
+						continue;
+					}
+					try {
+						if (listener.Pending()) {
+							TcpClient client = listener.AcceptTcpClient();
+							ServerConnection connection = new ServerConnection(client);
+							if (ClientConnected != null) {
+								lock (activeThreadsLock) {
+									activeThreads++;
+								}
+								connection.CallbackThread = new Thread(() => {
+									ClientConnected?.Invoke(this, connection);
+								});
+								connection.CallbackThread.Start();
 							}
-							connection.CallbackThread = new Thread(() => {
-								ClientConnected?.Invoke(this, connection);
-							});
-							connection.CallbackThread.Start();
-						}
 
-						lock (connections) {
-							connections.Add(connection);
+							lock (connections) {
+								connections.Add(connection);
+							}
+						}
+						else {
+							Thread.Sleep(IdleTime);
 						}
 					}
-					else {
-						try { Thread.Sleep(IdleTime); }
-						catch (ThreadInterruptedException) { }
-					}
-				}
-				catch (ThreadAbortException) { }
-				catch (ThreadInterruptedException) { } //thread is interrupted when we quit
-				catch (Exception e) {
-					if (IsRunning) {
-						Error?.Invoke(this, e);
+					catch (SocketException ex) {
+						if (IsRunning) {
+							Error?.Invoke(this, ex);
+						}
 					}
 				}
 			}
+			catch (ThreadAbortException) { }
+			catch (ThreadInterruptedException) { }
+			/*catch (Exception ex) {
+				if (IsRunning) {
+					Error?.Invoke(this, e);
+					Stop();
+				}
+			}*/
 		}
 
 		public void Send(Command command) {
@@ -345,6 +355,18 @@ namespace TerrariaMidiPlayer.Syncing {
 						break;
 					}
 				}
+				Thread.Yield();
+				if (waiting) {
+					sem.Release();
+					waiting = false;
+				}
+			}
+		}
+		public void SendToConnection(Command command, ServerConnection connection) {
+			if (connection.IsMarkedForRemoval)
+				return;
+			lock (sem) {
+				connection.Send(command);
 				Thread.Yield();
 				if (waiting) {
 					sem.Release();

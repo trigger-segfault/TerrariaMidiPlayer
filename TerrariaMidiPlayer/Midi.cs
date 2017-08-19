@@ -43,7 +43,6 @@ namespace TerrariaMidiPlayer {
 			public int HighestNote;
 			public int LowestNote;
 			public int Notes;
-			public List<int> Channels;
 			public int Index;
 			public Track Track;
 		}
@@ -61,7 +60,6 @@ namespace TerrariaMidiPlayer {
 		private string name;
 		private string path;
 		private Sequence sequence;
-		private Dictionary<int, TrackData> channels;
 		private List<TrackData> tracks;
 		private List<TrackSettings> trackSettings;
 		private int noteOffset;
@@ -73,7 +71,6 @@ namespace TerrariaMidiPlayer {
 			name = "";
 			path = "";
 			sequence = new Sequence();
-			channels = new Dictionary<int, TrackData>();
 			tracks = new List<TrackData>();
 			trackSettings = new List<TrackSettings>();
 			noteOffset = 0;
@@ -83,7 +80,6 @@ namespace TerrariaMidiPlayer {
 
 		public bool Load(string path) {
 			name = "";
-			channels.Clear();
 			tracks.Clear();
 			trackSettings.Clear();
 			noteOffset = 0;
@@ -96,18 +92,12 @@ namespace TerrariaMidiPlayer {
 					TrackData trackData = new TrackData();
 					trackData.Track = track;
 					TrackSettings settings = new TrackSettings();
-					trackData.Channels = new List<int>();
 					trackData.Index = index;
 					for (int i = 0; i < track.Count; i++) {
 						var midiEvent = track.GetMidiEvent(i);
 						if (midiEvent.MidiMessage.MessageType == MessageType.Channel) {
 							var message = midiEvent.MidiMessage as ChannelMessage;
 							if (message.Data2 > 0 && message.Command == ChannelCommand.NoteOn) {
-
-								if (!channels.ContainsKey(message.MidiChannel)) {
-									channels.Add(message.MidiChannel, trackData);
-									trackData.Channels.Add(message.MidiChannel);
-								}
 								trackData.Notes++;
 								if (message.Data1 < trackData.LowestNote || trackData.LowestNote == 0)
 									trackData.LowestNote = message.Data1;
@@ -116,7 +106,7 @@ namespace TerrariaMidiPlayer {
 							}
 						}
 					}
-					if (trackData.Channels.Count > 0) {
+					if (trackData.Notes > 0) {
 						// Guess a good octave offset
 						int lowestOffset = trackData.LowestNote % 12;
 						int highestOffset = (trackData.HighestNote - 1) % 12;
@@ -129,10 +119,7 @@ namespace TerrariaMidiPlayer {
 						else {
 							settings.OctaveOffset = (trackData.HighestNote + 11 - 1) / 12 - 2 - 1;
 						}
-
-						foreach (int channel in trackData.Channels) {
-							channels[channel] = trackData;
-						}
+						
 						tracks.Add(trackData);
 						trackSettings.Add(settings);
 						index++;
@@ -214,14 +201,8 @@ namespace TerrariaMidiPlayer {
 		public TrackSettings GetTrackSettings(int index) {
 			return trackSettings[index];
 		}
-		public TrackData GetTrackByChannel(int channel) {
-			return channels[channel];
-		}
 		public TrackData GetTrackByTrackObj(Track track) {
 			return tracks.Find(t => t.Track == track);
-		}
-		public TrackSettings GetTrackSettingsByChannel(int channel) {
-			return trackSettings[channels[channel].Index];
 		}
 		public TrackSettings GetTrackSettingsByTrackObj(Track track) {
 			int index = tracks.FindIndex(t => t.Track == track);

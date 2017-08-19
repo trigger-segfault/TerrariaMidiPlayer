@@ -102,6 +102,9 @@
     <Compile Include="Windows\CreditsWindow.xaml.cs">
       <DependentUpon>CreditsWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Windows\ExecutableNameDialog.xaml.cs">
+      <DependentUpon>ExecutableNameDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Windows\EditNameDialog.xaml.cs">
       <DependentUpon>EditNameDialog.xaml</DependentUpon>
     </Compile>
@@ -137,6 +140,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Windows\CreditsWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Windows\ExecutableNameDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

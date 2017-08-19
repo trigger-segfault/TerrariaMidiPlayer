@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -56,6 +57,10 @@ namespace TerrariaMidiPlayer.Util {
 
 		[DllImport("user32.dll")]
 		[return: MarshalAs(UnmanagedType.Bool)]
+		private static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
+
+		[DllImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
 		private static extern bool ShowWindowAsync(HandleRef hHandle, int nCmdShow);
 
 		[DllImport("user32.dll")]
@@ -92,6 +97,8 @@ namespace TerrariaMidiPlayer.Util {
 		static Process process = null;
 		static Rect clientArea = new Rect(0, 0, 0, 0);
 		static bool focus = false;
+		//static bool hasWritten = false;
+		public static string ExeName = "Terraria";
 
 		public static Rect ClientArea {
 			get { return clientArea; }
@@ -104,51 +111,88 @@ namespace TerrariaMidiPlayer.Util {
 			get { return focus; }
 		}
 
-		public static void Update(bool fullUpdate) {
-			if (fullUpdate)
-				process = Process.GetProcessesByName("Terraria").FirstOrDefault();
-			if (process != null) {
-				RECT lpRect = new RECT();
-				POINT lpPoint = new POINT();
-				IntPtr hWnd = process.MainWindowHandle;
-				GetClientRect(hWnd, ref lpRect);
-				clientArea = new Rect(lpRect.left, lpRect.top, lpRect.right, lpRect.bottom);
-				ScreenToClient(hWnd, ref lpPoint);
-				clientArea.Location = new Point(-lpPoint.x, -lpPoint.y);
-				focus = (GetForegroundWindow() == process.MainWindowHandle);
+		public static bool Update(bool fullUpdate) {
+			try {
+				if (fullUpdate)
+					process = Process.GetProcessesByName(ExeName).FirstOrDefault();
+				if (process != null) {
+					RECT lpRect = new RECT();
+					IntPtr hWnd = process.MainWindowHandle;
+					if (GetClientRect(hWnd, ref lpRect)) {
+						clientArea = new Rect(lpRect.left, lpRect.top, lpRect.right, lpRect.bottom);
+						POINT lpPoint = new POINT();
+						lpPoint.x = (int)clientArea.X;
+						lpPoint.y = (int)clientArea.Y;
+						if (ClientToScreen(hWnd, ref lpPoint)) {
+							clientArea.Location = new Point(lpPoint.x, lpPoint.y);
+							focus = (GetForegroundWindow() == process.MainWindowHandle);
+						}
+						else {
+							return false;
+						}
+					}
+					else {
+						return false;
+					}
+					return true;
+				}
+				else {
+					clientArea = new Rect(0, 0, 0, 0);
+					focus = false;
+					return true;
+				}
 			}
-			else {
+			catch (Exception ex) {
 				clientArea = new Rect(0, 0, 0, 0);
 				focus = false;
+				return false;
 			}
 		}
 
 		//https://stackoverflow.com/questions/2315561/correct-way-in-net-to-switch-the-focus-to-another-application?answertab=oldest#tab-top
 
-		public static void Focus() {
-			if (process != null) {
-				// The window is hidden so try to restore it before setting focus.
-				//ShowWindow(new HandleRef(null, process.MainWindowHandle), (int)ShowWindowEnum.Restore);
-				RestoreFromMinimzied();
+		public static bool Focus() {
+			try {
+				if (process != null) {
+					// The window is hidden so try to restore it before setting focus.
+					//ShowWindow(new HandleRef(null, process.MainWindowHandle), (int)ShowWindowEnum.Restore);
+					RestoreFromMinimzied();
 
-				// Get the hWnd of the process
-				IntPtr hWnd = process.MainWindowHandle;
+					// Get the hWnd of the process
+					IntPtr hWnd = process.MainWindowHandle;
 
-				// Set user the focus to the window
-				SetForegroundWindow(hWnd);
+					// Set user the focus to the window
+					SetForegroundWindow(hWnd);
 
-				// Reacquire the client rect
-				RECT lpRect = new RECT();
-				POINT lpPoint = new POINT();
-				GetClientRect(hWnd, ref lpRect);
-				clientArea = new Rect(lpRect.left, lpRect.top, lpRect.right, lpRect.bottom);
-				ScreenToClient(hWnd, ref lpPoint);
-				clientArea.Location = new Point(-lpPoint.x, -lpPoint.y);
+					// Reacquire the client rect
+					RECT lpRect = new RECT();
+					if (GetClientRect(hWnd, ref lpRect)) {
+						clientArea = new Rect(lpRect.left, lpRect.top, lpRect.right, lpRect.bottom);
+						POINT lpPoint = new POINT();
+						lpPoint.x = (int)clientArea.X;
+						lpPoint.y = (int)clientArea.Y;
+						if (ClientToScreen(hWnd, ref lpPoint)) {
+							clientArea.Location = new Point(lpPoint.x, lpPoint.y);
+							focus = (GetForegroundWindow() == process.MainWindowHandle);
+						}
+						else {
+							return false;
+						}
+					}
+					else {
+						return false;
+					}
+					return true;
+				}
+				return false;
+			}
+			catch (Exception ex) {
+				return false;
 			}
 		}
 
 		public static bool CheckIfFocused() {
-			Update(false);
+			Update(true);
 			return HasFocus;
 		}
 	}

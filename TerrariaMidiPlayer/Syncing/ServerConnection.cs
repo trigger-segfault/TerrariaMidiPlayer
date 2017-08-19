@@ -140,6 +140,7 @@ namespace TerrariaMidiPlayer.Syncing {
 							messagesToSend.RemoveAt(0);
 						}
 						attemptCount = 0;
+						client.Close();
 					}
 				}
 				catch (ObjectDisposedException) {

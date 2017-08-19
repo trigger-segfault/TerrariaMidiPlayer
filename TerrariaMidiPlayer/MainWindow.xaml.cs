@@ -69,7 +69,7 @@ namespace TerrariaMidiPlayer {
 		Keybind keybindPlay = new Keybind(Key.NumPad0);
 		Keybind keybindPause = new Keybind(Key.NumPad1);
 		Keybind keybindStop = new Keybind(Key.NumPad2);
-		Keybind keybindClose = new Keybind(Key.Escape);
+		Keybind keybindClose = new Keybind(Key.Add);
 		Keybind keybindMount = new Keybind(Key.R);
 		bool closeNoFocus = false;
 		bool playbackNoFocus = false;
@@ -130,7 +130,7 @@ namespace TerrariaMidiPlayer {
 
 			useTime = 11;
 			checksEnabled = true;
-			checkFrequency = 0;
+			checkFrequency = 20;
 			checkCount = 0;
 			clickTime = 40;
 
@@ -148,6 +148,7 @@ namespace TerrariaMidiPlayer {
 				keybindPlay = new Keybind(Key.Delete);
 				keybindPause = new Keybind(Key.End);
 				keybindStop = new Keybind(Key.PageDown);
+				keybindClose = new Keybind(Key.PageUp);
 			}
 
 			LoadConfig();
@@ -155,6 +156,15 @@ namespace TerrariaMidiPlayer {
 			UpdateMidi();
 			UpdateKeybindTooltips();
 
+			/* TODO:
+			 * Code Refactor
+			 * Split MainWindow into multiple classes
+			 * Pressing Enter to talk mutes Mount key (Setting)
+			 * Touhou Midis/Initial D Midis
+			 */
+
+
+			// Make numeric up down tab focus properly
 			FocusableProperty.OverrideMetadata(typeof(NumericUpDown), new FrameworkPropertyMetadata(false));
 			KeyboardNavigation.TabNavigationProperty.OverrideMetadata(typeof(NumericUpDown), new FrameworkPropertyMetadata(KeyboardNavigationMode.Local));
 		}
@@ -184,6 +194,10 @@ namespace TerrariaMidiPlayer {
 						return false;
 
 					#region Settings
+					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/ExecutableName");
+					if (node != null)
+						TerrariaWindowLocator.ExeName = node.InnerText;
+
 					node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/UseTime");
 					if (node != null && !int.TryParse(node.InnerText, out useTime))
 						useTime = 11;
@@ -356,6 +370,10 @@ namespace TerrariaMidiPlayer {
 				#region Settings
 				XmlElement setting = doc.CreateElement("Settings");
 				midiPlayer.AppendChild(setting);
+
+				element = doc.CreateElement("ExecutableName");
+				element.AppendChild(doc.CreateTextNode(TerrariaWindowLocator.ExeName));
+				setting.AppendChild(element);
 
 				element = doc.CreateElement("UseTime");
 				element.AppendChild(doc.CreateTextNode(useTime.ToString()));
@@ -552,12 +570,15 @@ namespace TerrariaMidiPlayer {
 			if (midi != null) {
 				if (keybindPlay.IsDown(e) && (playbackNoFocus || IsActive || TerrariaWindowLocator.CheckIfFocused())) {
 					if (server != null)
-						HostPlay();
+						HostStartPlay();
 					else
 						Play();
 				}
 				else if (keybindPause.IsDown(e) && (playbackNoFocus || IsActive || TerrariaWindowLocator.CheckIfFocused())) {
-					Pause();
+					if (server != null)
+						HostStop();
+					else
+						Pause();
 				}
 				else if (keybindStop.IsDown(e)) {
 					if (server != null)
@@ -599,7 +620,13 @@ namespace TerrariaMidiPlayer {
 			if (midi.IsMessagePlayable(e) && (watch.ElapsedMilliseconds >= useTime * 1000 / 60 + 2 || firstNote)) {
 				if (checksEnabled) {
 					checkCount++;
-					TerrariaWindowLocator.Update(checkCount > checkFrequency);
+					if (!TerrariaWindowLocator.Update(checkCount > checkFrequency)) {
+						Stop();
+						Dispatcher.Invoke(() => {
+							TriggerMessageBox.Show(this, MessageIcon.Error, "Failed to keep track of the Terraria Window!", "Tracking Error");
+						});
+						return;
+					}
 					if (checkCount > checkFrequency)
 						checkCount = 0;
 					if (!TerrariaWindowLocator.HasFocus) {
@@ -733,15 +760,24 @@ namespace TerrariaMidiPlayer {
 		}
 
 		private void OnStopToggled(object sender, RoutedEventArgs e) {
-			Stop();
+			if (server != null)
+				HostStop();
+			else
+				Stop();
 		}
 
 		private void OnPlayToggled(object sender, RoutedEventArgs e) {
-			Play();
+			if (server != null)
+				HostStartPlay();
+			else
+				Play();
 		}
 
 		private void OnPauseToggled(object sender, RoutedEventArgs e) {
-			Pause();
+			if (server != null)
+				HostStop();
+			else
+				Pause(); 
 		}
 
 		private void OnMidiPositionChanged(object sender, RoutedPropertyChangedEventArgs<double> e) {
@@ -781,8 +817,10 @@ namespace TerrariaMidiPlayer {
 					});
 				}
 				else {
-					toggleButtonPlay.IsChecked = false;
-					TriggerMessageBox.Show(this, MessageIcon.Error, "You cannot play a midi when Terraria isn't running!", "Terraria not Running");
+					Dispatcher.Invoke(() => {
+						toggleButtonPlay.IsChecked = false;
+						TriggerMessageBox.Show(this, MessageIcon.Warning, "You cannot play a midi when Terraria isn't running! Have you specified the correct executable name in Options?", "Terraria not Running");
+					});
 				}
 			}
 		}
@@ -1182,6 +1220,10 @@ namespace TerrariaMidiPlayer {
 		#endregion
 
 		#region Menu Item Events
+		private void OnExit(object sender, RoutedEventArgs e) {
+			Close();
+		}
+
 		private void OnChangeKeybinds(object sender, RoutedEventArgs e) {
 			Stop();
 			loaded = false;
@@ -1192,8 +1234,14 @@ namespace TerrariaMidiPlayer {
 			UpdateKeybindTooltips();
 		}
 
-		private void OnExit(object sender, RoutedEventArgs e) {
-			Close();
+		private void OnTerrariaExeName(object sender, RoutedEventArgs e) {
+			loaded = false;
+			ExecutableNameDialog.ShowDialog(this);
+			loaded = true;
+		}
+
+		private void OnSaveConfig(object sender, RoutedEventArgs e) {
+			SaveConfig(false);
 		}
 
 		private void OnOpenOnGitHub(object sender, RoutedEventArgs e) {
@@ -1219,14 +1267,9 @@ namespace TerrariaMidiPlayer {
 		private void OnAboutInstruments(object sender, RoutedEventArgs e) {
 			Process.Start("https://terraria.gamepedia.com/Harp");
 		}
-
-		private void OnSaveConfig(object sender, RoutedEventArgs e) {
-			SaveConfig(false);
-		}
 		#endregion
 
 		#region Syncing
-		private Stopwatch syncWatch;
 		private DateTime syncTime;
 		private long syncTickCount;
 
@@ -1257,6 +1300,7 @@ namespace TerrariaMidiPlayer {
 		private Dictionary<string, User> userMap;
 		private List<User> userList;
 		private string password = "";
+		private Thread hostPlayThread;
 
 		private void InitHost() {
 			server = null;
@@ -1271,6 +1315,8 @@ namespace TerrariaMidiPlayer {
 			numericHostWait.IsEnabled = false;
 			syncTime = DateTime.UtcNow;
 			syncTickCount = unchecked((uint)Environment.TickCount);
+			hostPlayThread = new Thread(HostPlay);
+			gridHostPlaying.Visibility = Visibility.Hidden;
 		}
 
 		private void OnHostStartup(object sender, RoutedEventArgs e) {
@@ -1294,31 +1340,32 @@ namespace TerrariaMidiPlayer {
 					buttonHostAssignSong.IsEnabled = true;
 					listViewClients.IsEnabled = true;
 					buttonHostStartup.Content = "Shutdown";
-					syncWatch = new Stopwatch();
-					syncWatch.Start();
 					password = textBoxHostPassword.Text;
 				}
 			}
 			else {
+				Stop();
 				server.Stop();
 				server = null;
 				userList.Clear();
 				userMap.Clear();
-				listViewClients.Items.Clear();
 
-				comboBoxSyncType.IsEnabled = true;
-				textBoxHostPassword.IsEnabled = true;
-				numericHostPort.IsEnabled = true;
-				numericHostWait.IsEnabled = false;
-				textBoxHostNextSong.IsEnabled = false;
-				buttonHostAssignSong.IsEnabled = false;
-				listViewClients.IsEnabled = false;
-				buttonHostStartup.Content = "Startup";
-				textBoxHostNextSong.Text = "";
-				if (syncWatch != null) {
-					syncWatch.Stop();
-					syncWatch = null;
-				}
+				Dispatcher.Invoke(() => {
+					listViewClients.Items.Clear();
+
+					gridHostPlaying.Visibility = Visibility.Hidden;
+					labelHostPlaying.Content = "Stopped";
+
+					comboBoxSyncType.IsEnabled = true;
+					textBoxHostPassword.IsEnabled = true;
+					numericHostPort.IsEnabled = true;
+					numericHostWait.IsEnabled = false;
+					textBoxHostNextSong.IsEnabled = false;
+					buttonHostAssignSong.IsEnabled = false;
+					listViewClients.IsEnabled = false;
+					buttonHostStartup.Content = "Startup";
+					textBoxHostNextSong.Text = "";
+				});
 			}
 		}
 
@@ -1336,17 +1383,17 @@ namespace TerrariaMidiPlayer {
 						var cmd = new StringCommand(data, data.Length);
 						connection.User.IPAddress = connection.IPAddress;
 						connection.User.Port = connection.Port;
-						connection.User.Name = cmd.Name;
 						if (cmd.Text != password) {
-							server.SendTo(new Command(Commands.InvalidPassword, cmd.Name), cmd.Name);
+							server.SendToConnection(new Command(Commands.InvalidPassword, Server.ServerName), connection);
 						}
 						else if (userMap.ContainsKey(cmd.Name)) {
-							server.SendTo(new Command(Commands.NameTaken, cmd.Name), cmd.Name);
+							server.SendToConnection(new Command(Commands.NameTaken, Server.ServerName), connection);
 						}
 						else {
+							connection.User.Name = cmd.Name;
 							connection.IsLoggedIn = true;
 							AddUser(connection.User);
-							server.SendTo(new Command(Commands.AcceptedUser, cmd.Name), cmd.Name);
+							server.SendTo(new Command(Commands.AcceptedUser, Server.ServerName), cmd.Name);
 						}
 						break;
 					}
@@ -1384,29 +1431,82 @@ namespace TerrariaMidiPlayer {
 				ErrorMessageBox.Show(e);
 		}
 
+		private void HostStartPlay() {
+			if (hostPlayThread.ThreadState == System.Threading.ThreadState.Unstarted) {
+				hostPlayThread.Start();
+			}
+			else if (hostPlayThread.ThreadState == System.Threading.ThreadState.Stopped) {
+				hostPlayThread = new Thread(HostPlay);
+				hostPlayThread.Start();
+			}
+		}
 		private void HostPlay() {
-			DateTime playTime = CalculateSyncDateTime();
-			playTime = playTime.AddMilliseconds(numericHostWait.Value);
-			server.IsPaused = true;
+			try {
+				DateTime playTime = CalculateSyncDateTime();
+				playTime = playTime.AddMilliseconds(numericHostWait.Value);
+				server.IsPaused = true;
 
-			foreach (User user in userList) {
-				server.SendToNow(new TimeCommand(Commands.PlaySong, Server.ServerName, playTime), user.Name);
-			}
-			while (CalculateSyncDateTime()/*DateTime.UtcNow*/ < playTime) {
-				Thread.Sleep(1);
-			}
+				foreach (User user in userList) {
+					server.SendToNow(new TimeCommand(Commands.PlaySong, Server.ServerName, playTime), user.Name);
+				}
+				/*while (CalculateSyncDateTime() < playTime) {
+					Thread.Sleep(1);
+				}*/
 
-			Play();
+				TimeSpan difference = playTime - CalculateSyncDateTime();
+				Dispatcher.Invoke(() => {
+					gridHostPlaying.Visibility = Visibility.Visible;
+					labelHostPlaying.Content = "Playing in " + MillisecondsToString((int)difference.TotalMilliseconds, false, true);
+				});
+				while (difference.TotalMilliseconds > 0) {
+					if (difference.TotalMilliseconds >= 500) {
+						Dispatcher.Invoke(() => {
+							labelHostPlaying.Content = "Playing in " + MillisecondsToString((int)difference.TotalMilliseconds, false, true);
+						});
+						if (server == null)
+							return;
+						lock (server) {
+							if (!server.IsPaused) {
+								Dispatcher.Invoke(() => {
+									gridHostPlaying.Visibility = Visibility.Hidden;
+									labelHostPlaying.Content = "Stopped";
+								});
+								return;
+							}
+						}
+						Thread.Yield();
+						Thread.Sleep(10);
+					}
+					else {
+						Thread.Sleep(2);
+					}
+					difference = playTime - CalculateSyncDateTime();
+				}
+
+				Play();
+				Dispatcher.Invoke(() => {
+					labelHostPlaying.Content = "Playing now";
+				});
+			}
+			catch (Exception ex) { }
 		}
 
 		private void HostStop() {
 			server.IsPaused = false;
 			server.Send(new Command(Commands.StopSong, Server.ServerName));
 			Stop();
+			Dispatcher.Invoke(() => {
+				gridHostPlaying.Visibility = Visibility.Hidden;
+				labelHostPlaying.Content = "Stopped";
+			});
 		}
 
 		private void HostSongFinished() {
 			server.IsPaused = false;
+			Dispatcher.Invoke(() => {
+				gridHostPlaying.Visibility = Visibility.Hidden;
+				labelHostPlaying.Content = "Stopped";
+			});
 		}
 
 		private void AddUser(User user) {
@@ -1414,18 +1514,22 @@ namespace TerrariaMidiPlayer {
 			Dispatcher.Invoke(() => {
 				userMap.Add(user.Name, user);
 				userList.Add(user);
-				listViewClients.Items.Add(new HostClientListViewItem(user.Name));
+				Dispatcher.Invoke(() => {
+					listViewClients.Items.Add(new HostClientListViewItem(user.Name));
+				});
 			});
 		}
 
 		private void RemoveUser(string username) {
 			if (userMap.ContainsKey(username)) {
 				int index = userList.FindIndex(u => u.Name == username);
-				userMap.Remove(username);
-				userList.RemoveAt(index);
-				Dispatcher.Invoke(() => {
-					listViewClients.Items.RemoveAt(index);
-				});
+				if (index != -1) {
+					userMap.Remove(username);
+					userList.RemoveAt(index);
+					Dispatcher.Invoke(() => {
+						listViewClients.Items.RemoveAt(index);
+					});
+				}
 			}
 		}
 
@@ -1438,6 +1542,7 @@ namespace TerrariaMidiPlayer {
 		private Timer clientTimeout;
 		private bool clientAccepted;
 		private int clientTimeOffset;
+		private Stopwatch reconnectWatch;
 
 		private void InitClient() {
 			client = null;
@@ -1448,6 +1553,7 @@ namespace TerrariaMidiPlayer {
 			clientTimeout.AutoReset = false;
 			clientAccepted = false;
 			clientTimeOffset = 0;
+			reconnectWatch = new Stopwatch();
 
 			gridSyncClient.Visibility = Visibility.Visible;
 			buttonClientReady.IsEnabled = false;
@@ -1481,13 +1587,12 @@ namespace TerrariaMidiPlayer {
 					buttonClientConnect.IsEnabled = false;
 					buttonClientConnect.Content = "Connecting...";
 					clientTimeout.Start();
-
-					syncWatch = new Stopwatch();
-					syncWatch.Start();
+					
 					client.Send(new StringCommand(Commands.Login, clientUser.Name, textBoxClientPassword.Text));
 				}
 			}
 			else {
+				Stop();
 				client.Disconnect();
 				client = null;
 				clientUser = new User();
@@ -1505,13 +1610,11 @@ namespace TerrariaMidiPlayer {
 					buttonClientReady.Content = "Ready";
 					buttonClientConnect.Content = "Connect";
 					textBoxClientNextSong.Text = "";
+					labelClientPlaying.Content = "Stopped";
 				});
 				clientAccepted = false;
 				clientReady = false;
-				if (syncWatch != null) {
-					syncWatch.Stop();
-					syncWatch = null;
-				}
+				reconnectWatch.Restart();
 			}
 		}
 
@@ -1532,7 +1635,10 @@ namespace TerrariaMidiPlayer {
 			if (!clientAccepted && client != null) {
 				Dispatcher.Invoke(() => {
 					OnClientConnect(null, new RoutedEventArgs());
-					TriggerMessageBox.Show(this, MessageIcon.Warning, "Failed to login!", "Login Failed");
+					if (reconnectWatch.ElapsedMilliseconds < 1500 + (int)clientTimeout.Interval)
+						TriggerMessageBox.Show(this, MessageIcon.Warning, "Failed to login! You are trying to reconnect to the server too quickly. Wait at least one second before reconnecting.", "Login Failed");
+					else
+						TriggerMessageBox.Show(this, MessageIcon.Warning, "Failed to login!", "Login Failed");
 				});
 			}
 		}
@@ -1555,7 +1661,10 @@ namespace TerrariaMidiPlayer {
 						if (!clientAccepted) {
 							Dispatcher.Invoke(() => {
 								OnClientConnect(null, new RoutedEventArgs());
-								TriggerMessageBox.Show(this, MessageIcon.Warning, "The chosen username is already in use.", "Name Taken");
+								if (reconnectWatch.ElapsedMilliseconds < 1500)
+									TriggerMessageBox.Show(this, MessageIcon.Warning, "You are trying to reconnect to the server too quickly.\nWait at least one second before reconnecting.", "Name Taken");
+								else
+									TriggerMessageBox.Show(this, MessageIcon.Warning, "The chosen username is already in use.", "Name Taken");
 							});
 						}
 						break;
@@ -1588,27 +1697,44 @@ namespace TerrariaMidiPlayer {
 					}
 				case Commands.PlaySong: {
 						if (clientAccepted && clientReady) {
-							var cmd = new TimeCommand(data, size);
-							DateTime playTime = cmd.DateTime.AddMilliseconds(clientTimeOffset);
-							client.IsPlaying = true;
-							TimeSpan difference = playTime - CalculateSyncDateTime();
-							while (difference.TotalMilliseconds > 0) {
-								if (difference.TotalMilliseconds >= 500) {
-									Dispatcher.Invoke(() => {
-										labelClientPlaying.Content = "Playing in " + MillisecondsToString((int)difference.TotalMilliseconds, false, true);
-									});
-									Thread.Sleep(10);
+							try {
+								var cmd = new TimeCommand(data, size);
+								DateTime playTime = cmd.DateTime.AddMilliseconds(clientTimeOffset);
+								client.IsPlaying = true;
+								TimeSpan difference = playTime - CalculateSyncDateTime();
+								while (difference.TotalMilliseconds > 0) {
+									if (difference.TotalMilliseconds >= 500) {
+										Dispatcher.Invoke(() => {
+											labelClientPlaying.Content = "Playing in " + MillisecondsToString((int)difference.TotalMilliseconds, false, true);
+										});
+										if (client == null)
+											return;
+										lock (client) {
+											if (!client.IsPlaying) {
+												Dispatcher.Invoke(() => {
+													labelClientPlaying.Content = "Stopped";
+												});
+												return;
+											}
+										}
+										Thread.Yield();
+										Thread.Sleep(10);
+									}
+									else {
+										Thread.Sleep(2);
+									}
+									difference = playTime - CalculateSyncDateTime();
 								}
-								else {
-									Thread.Sleep(1);
-								}
-								difference = playTime - CalculateSyncDateTime();
-							}
 
-							Play();
-							Dispatcher.Invoke(() => {
-								labelClientPlaying.Content = "Playing now";
-							});
+								Play();
+								Dispatcher.Invoke(() => {
+									if (difference.TotalMilliseconds < -400)
+										labelClientPlaying.Content = "Played " + ((long)-difference.TotalMilliseconds).ToString() + "ms early";
+									else
+										labelClientPlaying.Content = "Playing now";
+								});
+							}
+							catch (Exception ex) { }
 						}
 						break;
 					}

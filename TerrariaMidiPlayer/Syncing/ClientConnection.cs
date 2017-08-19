@@ -18,7 +18,7 @@ namespace TerrariaMidiPlayer.Syncing {
 		private const int IdleTime = 50;
 		private const int PlayingIdleTime = 2000;
 		private const int VerifyTime = 2000;
-		private const int MaxSendAttempts = 3;
+		private const int MaxSendAttempts = 8;
 
 		private List<byte[]> messagesToSend = new List<byte[]>();
 		private Thread senderThread = null;
@@ -56,7 +56,7 @@ namespace TerrariaMidiPlayer.Syncing {
 			get { return (client != null && client.Connected); }
 		}
 		public bool HasMoreWork {
-			get { return messagesToSend.Count > 0 || (client.Available > 0 && CanStartNewThread); }
+			get { return messagesToSend.Count > 0 || (client.Available > 0 && !CanStartNewThread); }
 		}
 		public bool CanStartNewThread {
 			get {
@@ -84,6 +84,7 @@ namespace TerrariaMidiPlayer.Syncing {
 				senderThread.Start();
 				user.IPAddress = ipAddress;
 				user.Port = port;
+				attemptCount = 0;
 				return true;
 			}
 			catch (Exception e) {
@@ -144,41 +145,44 @@ namespace TerrariaMidiPlayer.Syncing {
 		}
 
 		private void SenderThread() {
-			while (IsConnected) {
-				try {
-					bool moreWork = false;
-					if (callbackThread != null && CanStartNewThread) {
-						callbackThread = null;
-					}
+			try {
+				while (IsConnected) {
+					try {
+						bool moreWork = false;
+						if (callbackThread != null && CanStartNewThread) {
+							//try {
+								callbackThread = null;
+							//}
+							//catch (Exception ex) { }
+						}
 
-					if (callbackThread != null) {
+						if (callbackThread != null) {
 
-					}
-					else if (VerifyConnection()) {
-						moreWork = moreWork || ProcessConnection();
-					}
-					else {
-						callbackThread = new Thread(() => {
-							Disconnect(true);
-						});
-						callbackThread.Start();
-					}
+						}
+						else if (VerifyConnection()) {
+							moreWork = moreWork || ProcessConnection();
+						}
+						else {
+							callbackThread = new Thread(() => {
+								Disconnect(true);
+							});
+							callbackThread.Start();
+						}
 
-					if (!moreWork) {
-						Thread.Yield();
-						if (HasMoreWork)
-							moreWork = true;
+						if (!moreWork) {
+							Thread.Yield();
+							if (HasMoreWork)
+								moreWork = true;
+						}
 					}
+					catch (SocketException ex) {
+						client.Close();
+					}
+					Thread.Sleep(playing ? PlayingIdleTime : IdleTime);
 				}
-				catch (ThreadAbortException) { }
-				catch (ThreadInterruptedException) { } //thread is interrupted when we quit
-				catch (Exception e) {
-					client.Close();
-				}
-				try { Thread.Sleep(playing ? PlayingIdleTime : IdleTime); }
-				catch (ThreadAbortException) { }
-				catch (ThreadInterruptedException) { }
 			}
+			catch (ThreadAbortException) { }
+			catch (ThreadInterruptedException) { }
 		}
 
 		private bool ProcessConnection() {
@@ -232,6 +236,8 @@ namespace TerrariaMidiPlayer.Syncing {
 							messagesToSend.RemoveAt(0);
 						}
 						attemptCount = 0;
+						client.Close();
+						return false;
 					}
 				}
 				catch (ObjectDisposedException) {

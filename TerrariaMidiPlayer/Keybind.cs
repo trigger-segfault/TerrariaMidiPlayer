@@ -138,8 +138,19 @@ namespace TerrariaMidiPlayer {
 			}
 
 			char mappedChar = Char.ToUpper(GetCharFromKey(Key));
-			if (Key >= Key.NumPad0 && Key <= Key.Divide)
+			if (Key >= Key.NumPad0 && Key <= Key.NumPad9)
 				displayString += Key.ToString();
+			else if (Key >= Key.Multiply && Key <= Key.Divide && Key != Key.Separator) {
+				switch (Key) {
+					case Key.Multiply: displayString += "NumPad*"; break;
+					case Key.Add: displayString += "NumPad+"; break;
+					case Key.Subtract: displayString += "NumPad-"; break;
+					case Key.Decimal: displayString += "NumPad."; break;
+					case Key.Divide: displayString += "NumPad/"; break;
+				}
+			}
+			else if (Key == Key.Pause)
+				displayString += "PauseBreak";
 			else if (mappedChar > 32) // Yes, exclude space
 				displayString += mappedChar;
 			else if (Key == Key.Back)

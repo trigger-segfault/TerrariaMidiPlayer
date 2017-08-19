@@ -1,0 +1,16 @@
+﻿<Window x:Class="TerrariaMidiPlayer.Windows.ExecutableNameDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TerrariaMidiPlayer.Controls"
+        mc:Ignorable="d"
+        Title="Executable Name" Height="166" Width="300" Background="#FFF9F9F9" Icon="/TerrariaMidiPlayer;component/Resources/Icons/TerrariaIcon.png" PreviewKeyDown="OnPreviewKeyDown" WindowStartupLocation="CenterOwner">
+    <Grid>
+        <TextBox x:Name="textBox" Height="23" Margin="20,59,20,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <Button Content="Cancel" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" IsCancel="True"/>
+        <Button Content="OK" HorizontalAlignment="Right" Margin="0,0,95,10" VerticalAlignment="Bottom" Width="75" IsDefault="True" Click="OnOKClicked"/>
+        <Label Content="Enter the name of your Terraria executable" HorizontalAlignment="Left" Margin="20,9,0,0" VerticalAlignment="Top" Padding="0,5,5,5"/>
+        <Label Content="without the &quot;.exe&quot;" HorizontalAlignment="Left" Margin="20,28,0,0" VerticalAlignment="Top" Padding="0,5,5,5"/>
+    </Grid>
+</Window>

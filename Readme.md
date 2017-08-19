@@ -3,7 +3,7 @@ A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi
 
 ![Window Preview](http://i.imgur.com/Yl8JQq6.png)
 
-### [Wiki](https://github.com/trigger-death/TerrariaMidiPlayer/wiki) | [Credits](https://github.com/trigger-death/TerrariaMidiPlayer/wiki/Credits) | [Image Album](http://imgur.com/a/LtTvj)
+### [Wiki](https://github.com/trigger-death/TerrariaMidiPlayer/wiki) | [Credits](https://github.com/trigger-death/TerrariaMidiPlayer/wiki/Credits) | [Image Album](http://imgur.com/a/LtTvj) | Latest Release: [1.0.0.1 (Hotfix)](https://github.com/trigger-death/TerrariaMidiPlayer/releases/tag/1.0.0.1)
 
 ## Requirements for Running
 * .NET Framwork 4.5.2 | [Offline Installer](https://www.microsoft.com/en-us/download/details.aspx?id=42642) | [Web Installer](https://www.microsoft.com/en-us/download/details.aspx?id=42643)
@@ -33,7 +33,7 @@ A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi
 * [MidiEditor](http://midieditor.sourceforge.net/) is a free tool for editing midis. You're going to need it in order to make most midis playable.
 
 ## Default Keybinds
-* Force Close: `Escape`
+* Force Close: `Numpad +` <sup>(<code>Page Up</code>, when no numpad is present)</sup>
 * Play Midi: `Numpad 0` <sup>(<code>Delete</code>, when no numpad is present)</sup>
 * Pause Midi: `Numpad 1` <sup>(<code>End</code>, when no numpad is present)</sup>
 * Stop Midi: `Numpad 2` <sup>(<code>Page Down</code>, when no numpad is present)</sup>

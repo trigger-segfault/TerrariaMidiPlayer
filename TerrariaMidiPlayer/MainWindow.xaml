@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:TerrariaMidiPlayer.Controls"
         xmlns:System="clr-namespace:System;assembly=mscorlib" x:Class="TerrariaMidiPlayer.MainWindow"
         mc:Ignorable="d"
-        Title="Terraria Midi Player" Height="383" Width="540" Closing="OnClosing" Icon="App.ico" ResizeMode="CanMinimize" SnapsToDevicePixels="True" UseLayoutRounding="True" Loaded="OnLoaded" Background="#FFCFCCC8">
+        Title="Terraria Midi Player" Height="383" Width="540" Closing="OnClosing" Icon="App.ico" ResizeMode="CanMinimize" SnapsToDevicePixels="True" UseLayoutRounding="True" Loaded="OnWindowLoaded" Background="#FFCFCCC8">
     <Window.Resources>
         <Style TargetType="{x:Type ListBox}">
             <Style.Resources>
@@ -50,7 +50,7 @@
                         <Image Source="Resources/Icons/Keybinds.png" />
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Executable Name..." Click="OnTerrariaExeName">
+                <MenuItem Header="Executable Name..." Click="OnExecutableName">
                     <MenuItem.Icon>
                         <Image Source="Resources/Icons/TerrariaIcon.png" />
                     </MenuItem.Icon>
@@ -125,10 +125,10 @@
                     <GroupBox Header="Adjustment" Margin="147,7,10,0" VerticalAlignment="Top" Height="179">
                         <Grid>
                             <Label Content="Use Time" HorizontalAlignment="Left" Margin="8,10,0,0" VerticalAlignment="Top" ToolTip="Instrument use time in frames."/>
-                            <local:NumericUpDown x:Name="numericUseTime" Margin="71,12,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="60" Increment="1" Maximum="100" Minimum="2" Value="11" ErrorValue="12" ValueChanged="OnUseTimeChanged"/>
+                            <local:IntSpinner x:Name="numericUseTime" Margin="71,12,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="60" Increment="1" Maximum="100" Minimum="2" Value="11" ErrorValue="12" ValueChanged="OnUseTimeChanged"/>
                             <Label Content="Click Time" HorizontalAlignment="Left" Margin="3,37,0,0" VerticalAlignment="Top" ToolTip="The duration the mouse is held down for in milliseconds.&#x0a;Longer means the game is more likely to register the click."/>
-                            <local:NumericUpDown x:Name="numericClickTime" Margin="71,39,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="60" Increment="1" Maximum="500" Value="40" ValueChanged="OnClickTimeChanged" Minimum="18" IsManipulationEnabled="True"/>
-                            <local:NumericUpDown x:Name="numericChecks" Margin="71,66,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="60" Increment="1" Maximum="10000" Value="20" ValueChanged="OnChecksChanged"/>
+                            <local:IntSpinner x:Name="numericClickTime" Margin="71,39,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="60" Increment="1" Maximum="500" Value="40" ValueChanged="OnClickTimeChanged" Minimum="18" IsManipulationEnabled="True"/>
+                            <local:IntSpinner x:Name="numericChecks" Margin="71,66,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="60" Increment="1" Maximum="10000" Value="20" ValueChanged="OnChecksChanged"/>
                             <CheckBox x:Name="checkBoxChecks" Content="Checks" HorizontalAlignment="Left" Margin="8,70,0,0" VerticalAlignment="Top" Click="OnChecksEnabledClicked" IsChecked="True" Padding="4,-1,5,0" ToolTip="Checks to make sure Terraria is the active window when playing a song.&#x0a;The higher the number, the more notes will pass before it checks again."/>
 
                             <Label Content="Mount" HorizontalAlignment="Left" Margin="10,98,0,0" VerticalAlignment="Top" ToolTip="Needed to calculate the center of the player." Visibility="Hidden"/>
@@ -174,7 +174,7 @@
                     <Label x:Name="labelNotes" Content="Notes:" HorizontalAlignment="Left" Margin="115,84,0,0" VerticalAlignment="Top"/>
                     <CheckBox x:Name="checkBoxTrackEnabled" Content="Enabled" HorizontalAlignment="Right" Margin="0,107,14,0" VerticalAlignment="Top" Click="OnTrackEnabledClicked" IsChecked="True" Padding="4,-1,5,0" RenderTransformOrigin="0.516,5.667"/>
                     <Label Content="Octave Offset" HorizontalAlignment="Right" Margin="0,128,81,0" VerticalAlignment="Top"/>
-                    <local:NumericUpDown x:Name="numericOctaveOffset" Margin="0,130,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="10" Value="0" ValueChanged="OnOctaveOffsetChanged" Minimum="-10"/>
+                    <local:IntSpinner x:Name="numericOctaveOffset" Margin="0,130,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="10" Value="0" ValueChanged="OnOctaveOffsetChanged" Minimum="-10"/>
 
                     <Separator Height="7" Margin="10,157,10,0" VerticalAlignment="Top"/>
 
@@ -182,12 +182,15 @@
                     <Label x:Name="labelDuration" Content="Duration:" HorizontalAlignment="Left" Margin="10,198,0,0" VerticalAlignment="Top"/>
 
                     <Label Content="Note Offset" HorizontalAlignment="Right" Margin="0,168,81,0" VerticalAlignment="Top"/>
-                    <local:NumericUpDown x:Name="numericNoteOffset" Margin="0,170,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="11" Value="0" ValueChanged="OnNoteOffsetChanged" Minimum="-11"/>
+                    <local:IntSpinner x:Name="numericNoteOffset" Margin="0,170,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="11" Value="0" ValueChanged="OnNoteOffsetChanged" Minimum="-11"/>
                     <Label Content="Speed (%)" HorizontalAlignment="Right" Margin="0,198,81,0" VerticalAlignment="Top"/>
-                    <local:NumericUpDown x:Name="numericSpeed" Margin="0,200,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="10000" Value="100" ValueChanged="OnSpeedChanged" Minimum="1"/>
+                    <local:IntSpinner x:Name="numericSpeed" Margin="0,200,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="10000" Value="100" ValueChanged="OnSpeedChanged" Minimum="1"/>
 
                     <Label Content="Keybind" HorizontalAlignment="Right" Margin="0,229,195,0" VerticalAlignment="Top"/>
                     <local:KeybindReader x:Name="keybindReaderMidi" Margin="0,231,10,0" HorizontalAlignment="Right" KeybindChanged="OnMidiKeybindChanged"/>
+                    <Button x:Name="buttonEditTrackName" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" ToolTip="Edit Midi Name" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="89,9,0,0" Click="OnEditTrackName">
+                        <Image Source="Resources/Icons/EditNameUnflipped.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
+                    </Button>
                 </Grid>
             </TabItem>
             <TabItem Header="Syncing" IsTabStop="False">
@@ -200,19 +203,19 @@
                     <Separator Height="7" Margin="10,37,10,0" VerticalAlignment="Top"/>
                     <Grid x:Name="gridSyncClient" Visibility="Hidden" Margin="0,44,0,0">
                         <Label Content="IP" Width="36" HorizontalAlignment="Left" VerticalAlignment="Top" HorizontalContentAlignment="Right" Margin="10,8,0,0"/>
-                        <TextBox x:Name="textBoxClientIP" Height="23" Margin="51,10,131,0" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="False"/>
+                        <TextBox x:Name="textBoxClientIP" Height="23" Margin="51,10,131,0" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="False" TextChanged="OnClientIPChanged"/>
                         <Label Content="Port" Width="36" HorizontalAlignment="Right" VerticalAlignment="Top" HorizontalContentAlignment="Right" Margin="0,8,90,0"/>
-                        <local:NumericUpDown x:Name="numericClientPort" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,15,0" Width="70" Value="0" Maximum="65535" IsTabStop="True"/>
+                        <local:IntSpinner x:Name="numericClientPort" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,15,0" Width="70" Value="0" Maximum="65535" IsTabStop="True" ValueChanged="OnClientPortChanged"/>
                         <Label Content="User" Width="36" HorizontalAlignment="Left" VerticalAlignment="Top" HorizontalContentAlignment="Right" Margin="10,36,0,0"/>
-                        <TextBox x:Name="textBoxClientUsername" Height="23" Margin="51,38,131,0" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="False"/>
+                        <TextBox x:Name="textBoxClientUsername" Height="23" Margin="51,38,131,0" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="False" TextChanged="OnClientUsernameChanged"/>
                         <Label Content="Pass" Width="36" HorizontalAlignment="Left" VerticalAlignment="Top" HorizontalContentAlignment="Right" Margin="10,64,0,0"/>
-                        <TextBox x:Name="textBoxClientPassword" Height="23" TextWrapping="Wrap" VerticalAlignment="Top" Margin="51,66,131,0" AllowDrop="False"/>
+                        <TextBox x:Name="textBoxClientPassword" Height="23" TextWrapping="Wrap" VerticalAlignment="Top" Margin="51,66,131,0" AllowDrop="False" TextChanged="OnClientPasswordChanged"/>
                         <Button x:Name="buttonClientConnect" Content="Connect" HorizontalAlignment="Right" Margin="0,38,15,0" VerticalAlignment="Top" Width="97" Click="OnClientConnect"/>
                         <Separator Height="7" Margin="10,95,10,0" VerticalAlignment="Top"/>
                         <Label Content="Next Song" Width="67" HorizontalAlignment="Left" VerticalAlignment="Top" HorizontalContentAlignment="Right" Margin="10,105,0,0"/>
                         <TextBox x:Name="textBoxClientNextSong" IsReadOnly="True" Height="23" Margin="90,107,15,0" TextWrapping="Wrap" VerticalAlignment="Top" Text="" AllowDrop="False" IsUndoEnabled="False" IsTabStop="False"/>
                         <Label Content="Time Offset (ms)" HorizontalAlignment="Left" Margin="10,139,0,0" VerticalAlignment="Top" Width="98" HorizontalContentAlignment="Right"/>
-                        <local:NumericUpDown x:Name="numericClientPlayOffset" VerticalAlignment="Top" Margin="113,141,15,0" Width="Auto" Value="0" Minimum="-100000000" Maximum="100000000" ValueChanged="OnClientTimeOffsetChanged" IsManipulationEnabled="True" Focusable="True" HorizontalAlignment="Stretch"/>
+                        <local:IntSpinner x:Name="numericClientTimeOffset" VerticalAlignment="Top" Margin="113,141,15,0" Width="Auto" Value="0" Minimum="-100000000" Maximum="100000000" ValueChanged="OnClientTimeOffsetChanged" IsManipulationEnabled="True" Focusable="True" HorizontalAlignment="Stretch"/>
 
                         <Separator Height="7" Margin="10,169,10,0" VerticalAlignment="Top"/>
                         <Label x:Name="labelClientPlaying" Content="Stopped" HorizontalAlignment="Left" VerticalAlignment="Top" HorizontalContentAlignment="Right" Margin="10,179,0,0"/>
@@ -220,13 +223,13 @@
                     </Grid>
                     <Grid x:Name="gridSyncHost" Visibility="Visible" Margin="0,44,0,0">
                         <Label Content="Pass" Width="36" HorizontalAlignment="Left" VerticalAlignment="Top" HorizontalContentAlignment="Right" Margin="10,8,0,0"/>
-                        <TextBox x:Name="textBoxHostPassword" Height="23" Margin="51,10,131,0" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="False"/>
+                        <TextBox x:Name="textBoxHostPassword" Height="23" Margin="51,10,131,0" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="False" TextChanged="OnHostPasswordChanged"/>
                         <Label Content="Port" Width="36" HorizontalAlignment="Right" VerticalAlignment="Top" HorizontalContentAlignment="Right" Margin="0,8,90,0"/>
-                        <local:NumericUpDown x:Name="numericHostPort" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,15,0" Width="70" Value="0" Maximum="65535" IsTabStop="True"/>
+                        <local:IntSpinner x:Name="numericHostPort" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,15,0" Width="70" Value="0" Maximum="65535" IsTabStop="True" ValueChanged="OnHostPortChanged"/>
                         <Button x:Name="buttonHostStartup" Content="Startup" HorizontalAlignment="Right" Margin="0,38,15,0" VerticalAlignment="Top" Width="97" Click="OnHostStartup"/>
                         <Separator Height="7" Margin="10,67,10,0" VerticalAlignment="Top"/>
                         <Label Content="Wait (ms)" Width="60" HorizontalAlignment="Left" VerticalAlignment="Top" HorizontalContentAlignment="Right" Margin="10,36,0,0" ToolTip="The pause before all users begin playing"/>
-                        <local:NumericUpDown x:Name="numericHostWait" VerticalAlignment="Top" Margin="75,38,131,0" Width="Auto" Value="5000" Maximum="60000" Focusable="True" HorizontalAlignment="Stretch"/>
+                        <local:IntSpinner x:Name="numericHostWait" VerticalAlignment="Top" Margin="75,38,131,0" Width="Auto" Value="5000" Maximum="60000" Focusable="True" HorizontalAlignment="Stretch" ValueChanged="OnHostWaitChanged"/>
 
                         <Label x:Name="labelHostNextSong" Content="Next Song" Width="69" HorizontalAlignment="Left" VerticalAlignment="Top" HorizontalContentAlignment="Right" Margin="10,77,0,0"/>
                         <TextBox x:Name="textBoxHostNextSong" Height="23" Margin="84,79,43,0" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="False" IsTabStop="False"/>

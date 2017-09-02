@@ -4,15 +4,15 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:TerrariaMidiPlayer.Controls"
-             mc:Ignorable="d" Height="180.772" Width="130.194" Loaded="OnLoaded" UseLayoutRounding="True" HorizontalAlignment="Left" VerticalAlignment="Top">
+             mc:Ignorable="d" Height="180.772" Width="130.194" Loaded="OnControlLoaded" UseLayoutRounding="True" HorizontalAlignment="Left" VerticalAlignment="Top">
     <Grid>
 
         <GroupBox x:Name="groupBox" Header="Projectiles" TabIndex="2147483645" Margin="0,0,0,2">
             <Grid Margin="0">
                 <Label Content="Range" HorizontalAlignment="Left" Margin="5,129,0,0" VerticalAlignment="Top"/>
                 <Label Content="Angle" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="7,101,0,0"/>
-                <local:NumericUpDown x:Name="numericAngle" Increment="5" Maximum="359" Value="0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="56" Margin="53,103,0,0" ValueChanged="OnAngleValueChanged"/>
-                <local:NumericUpDown x:Name="numericRange" Increment="5" Maximum="360" Value="360" HorizontalAlignment="Left" VerticalAlignment="Top" Width="56" Margin="53,131,0,0" ValueChanged="OnRangeValueChanged"/>
+                <local:IntSpinner x:Name="numericAngle" Increment="5" Maximum="359" Value="0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="56" Margin="53,103,0,0" ValueChanged="OnAngleValueChanged"/>
+                <local:IntSpinner x:Name="numericRange" Increment="5" Maximum="360" Value="360" HorizontalAlignment="Left" VerticalAlignment="Top" Width="56" Margin="53,131,0,0" ValueChanged="OnRangeValueChanged"/>
             </Grid>
         </GroupBox>
         <Grid HorizontalAlignment="Left" Height="90" Margin="20,20,0,0" VerticalAlignment="Top" Width="90">

@@ -354,9 +354,10 @@ namespace Sanford.Multimedia.Midi
                     throw new NotSupportedException();
                 }
 
-                #endregion
+				#endregion
 
-                lock(lockObject) {
+
+				lock (lockObject) {
 					Stop();
 					sequence = value;
 				}
@@ -455,12 +456,13 @@ namespace Sanford.Multimedia.Midi
 		private void GetTempoDurations() {
 			tempoDurations.Clear();
 			clock.Ppqn = sequence.Division;
+			clock.Tempo = 500000;
 			rawDuration = 0;
 
 			bool tempoTrackFound = false;
+			TempoDuration tempoDuration = new TempoDuration();
 			foreach (Track t in Sequence) {
 				IEnumerator <MidiEvent> midiEnumerator = t.Iterator().GetEnumerator();
-				TempoDuration tempoDuration = new TempoDuration();
 				while (midiEnumerator.MoveNext()) {
 					MidiEvent e = midiEnumerator.Current;
 					if (e.MidiMessage.MessageType == MessageType.Meta) {
@@ -480,15 +482,16 @@ namespace Sanford.Multimedia.Midi
 						}
 					}
 				}
-				if (tempoDuration.Tempo == 0)
-					tempoDuration.Tempo = clock.Tempo;
-				tempoDuration.Length = sequence.GetLength() - tempoDuration.Start;
-				rawDuration += (long)tempoDuration.Tempo * (long)tempoDuration.Length;
-				tempoDurations.Add(tempoDuration);
 
 				if (tempoTrackFound)
 					break;
 			}
+			if (tempoDuration.Tempo == 0)
+				tempoDuration.Tempo = clock.Tempo;
+			tempoDuration.Length = sequence.GetLength() - tempoDuration.Start;
+			rawDuration += (long)tempoDuration.Tempo * (long)tempoDuration.Length;
+			tempoDurations.Add(tempoDuration);
+
 			// Assign the duration for quick use.
 			double oldSpeed = Speed;
 			Speed = 1.0;

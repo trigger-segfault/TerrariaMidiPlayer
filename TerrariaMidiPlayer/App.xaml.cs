@@ -10,19 +10,23 @@ using TerrariaMidiPlayer;
 using TerrariaMidiPlayer.Windows;
 
 namespace TerrariaMidiPlayer {
-	/// <summary>
-	/// Interaction logic for App.xaml
-	/// </summary>
+	/**<summary>The application class.</summary>*/
 	public partial class App : Application {
-		// Prevents multiple error windows opening for the same exception.
+		//=========== MEMBERS ============
+		#region Members
+
+		/**<summary>The last exception. Used to prevent multiple error windows for the same error.</summary>*/
 		private static object lastException = null;
+
+		#endregion
+		//============ EVENTS ============
+		#region Events
 
 		private void OnAppStartup(object sender, StartupEventArgs e) {
 			// Catch exceptions not in a UI thread
 			AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(OnAppDomainUnhandledException);
 			TaskScheduler.UnobservedTaskException += OnTaskSchedulerUnobservedTaskException;
 		}
-
 		private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e) {
 			if (e.Exception != lastException) {
 				lastException = e.Exception;
@@ -49,5 +53,7 @@ namespace TerrariaMidiPlayer {
 				});
 			}
 		}
+
+		#endregion
 	}
 }

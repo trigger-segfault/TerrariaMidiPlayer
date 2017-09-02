@@ -1,7 +1,7 @@
 ﻿<Window x:Class="TerrariaMidiPlayer.Windows.ErrorMessageBox"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Height="250" Width="520" ResizeMode="NoResize" WindowStartupLocation="CenterScreen" Loaded="OnWindowLoaded" 
+        Height="250" Width="520" ResizeMode="NoResize" WindowStartupLocation="CenterScreen" 
         Title="Unhandled Exception" Icon="../Resources/Icons/AppError.ico">
 
     <Grid>

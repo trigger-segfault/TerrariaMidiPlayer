@@ -16,74 +16,105 @@ using System.Windows.Shapes;
 using Xceed.Wpf.Toolkit;
 
 namespace TerrariaMidiPlayer.Controls {
-	/// <summary>
-	/// Interaction logic for NumericUpDown.xaml
-	/// </summary>
-	public partial class NumericUpDown : UserControl {
+	/**<summary>Signifies an numeric value change.</summary>*/
+	public class ValueChangedEventArgs<T> : RoutedEventArgs {
+		//=========== MEMBERS ============
+		#region Members
 
-		int errorValue;
-		int number;
-		int maximum;
-		int minimum;
-		int increment;
+		/**<summary>The previous value.</summary>*/
+		public T Previous;
+		/**<summary>The new value.</summary>*/
+		public T New;
 
-		public NumericUpDown() {
+		#endregion
+		//========= CONSTRUCTORS =========
+		#region Constructors
+
+		/**<summary>Constructs the value change event args.</summary>*/
+		public ValueChangedEventArgs(RoutedEvent routedEvent, T previousValue, T newValue) : base(routedEvent) {
+			Previous = previousValue;
+			New = newValue;
+		}
+
+		#endregion
+	}
+
+	/**<summary>An integer-based numeric spinner.</summary>*/
+	public partial class IntSpinner : UserControl {
+		//=========== MEMBERS ============
+		#region Members
+
+		/**<summary>The value used when a number can't be parsed.</summary>*/
+		private int errorValue = 0;
+		/**<summary>The current value.</summary>*/
+		private int number = 1;
+		/**<summary>The maximum value.</summary>*/
+		private int maximum = int.MaxValue;
+		/**<summary>The minimum value.</summary>*/
+		private int minimum = int.MinValue;
+		/**<summary>The spinner increments.</summary>*/
+		private int increment = 1;
+
+		#endregion
+		//========= CONSTRUCTORS =========
+		#region Constructors
+
+		/**<summary>Constructs the numeric spinner.</summary>*/
+		public IntSpinner() {
 			InitializeComponent();
-			this.errorValue = 0;
-			this.number = 1;
-			this.minimum = 0;
-			this.maximum = 10000;
-			this.increment = 1;
-
+			
 			UpdateSpinner();
 			UpdateTextBox();
-
-			textBox.Focusable = true;
 		}
-		public static readonly RoutedEvent ValueChangedEvent = EventManager.RegisterRoutedEvent("ValueChanged", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(NumericUpDown));
 
-		public event RoutedEventHandler ValueChanged;
+		#endregion
+		//============ EVENTS ============
+		#region Events
 
+		/**<summary>Event handler for value change events.</summary>*/
+		public delegate void IntChangedEventHandler(object sender, ValueChangedEventArgs<int> e);
+		/**<summary>The value changed routed event.</summary>*/
+		public static readonly RoutedEvent ValueChangedEvent = EventManager.RegisterRoutedEvent("ValueChanged", RoutingStrategy.Bubble, typeof(IntChangedEventHandler), typeof(IntSpinner));
+		/**<summary>Called when the value has been changed.</summary>*/
+		public event IntChangedEventHandler ValueChanged {
+			add { AddHandler(ValueChangedEvent, value); }
+			remove { RemoveHandler(ValueChangedEvent, value); }
+		}
+
+		#endregion
+		//========== PROPERTIES ==========
+		#region Properties
+		
+		/**<summary>The value used when a number can't be parsed.</summary>*/
 		public int ErrorValue {
 			get { return errorValue; }
 			set {
 				if (value < minimum || value > maximum)
-					throw new IndexOutOfRangeException("NumericUpDown ErrorValue outside of Minimum or Maximum range.");
+					throw new IndexOutOfRangeException("NumericSpinner ErrorValue outside of Minimum or Maximum range.");
 				errorValue = value;
 			}
 		}
+		/**<summary>The current value.</summary>*/
 		public int Value {
 			get { return number; }
 			set {
 				if (value < minimum || value > maximum)
-					throw new IndexOutOfRangeException("NumericUpDown Value outside of Minimum or Maximum range.");
+					throw new IndexOutOfRangeException("NumericSpinner Value outside of Minimum or Maximum range.");
 				if (number != value) {
+					int oldValue = number;
 					number = value;
 					UpdateSpinner();
 					UpdateTextBox();
-					RaiseEvent(new RoutedEventArgs(NumericUpDown.ValueChangedEvent));
+					RaiseEvent(new ValueChangedEventArgs<int>(IntSpinner.ValueChangedEvent, oldValue, number));
 				}
 			}
 		}
-		public int Minimum {
-			get { return minimum; }
-			set {
-				if (value > maximum)
-					throw new IndexOutOfRangeException("NumericUpDown Minimum is greater than Maximum range.");
-				minimum = value;
-				if (number < minimum)
-					Value = minimum;
-				else
-					UpdateSpinner();
-				if (errorValue < minimum)
-					errorValue = minimum;
-			}
-		}
+		/**<summary>The maximum value.</summary>*/
 		public int Maximum {
 			get { return maximum; }
 			set {
 				if (value < minimum)
-					throw new IndexOutOfRangeException("NumericUpDown Maximum is less than Minimum range.");
+					throw new IndexOutOfRangeException("NumericSpinner Maximum is less than Minimum range.");
 				maximum = value;
 				if (number > maximum)
 					Value = maximum;
@@ -93,30 +124,67 @@ namespace TerrariaMidiPlayer.Controls {
 					errorValue = maximum;
 			}
 		}
+		/**<summary>The minimum value.</summary>*/
+		public int Minimum {
+			get { return minimum; }
+			set {
+				if (value > maximum)
+					throw new IndexOutOfRangeException("NumericSpinner Minimum is greater than Maximum range.");
+				minimum = value;
+				if (number < minimum)
+					Value = minimum;
+				else
+					UpdateSpinner();
+				if (errorValue < minimum)
+					errorValue = minimum;
+			}
+		}
+		/**<summary>The up/down increments.</summary>*/
 		public int Increment {
 			get { return increment; }
 			set { increment = value; }
 		}
+		/**<summary>The text in the text box.</summary>*/
 		public string Text {
 			get { return textBox.Text; }
 		}
+
+		#endregion
+		//=========== EDITING ============
+		#region Editing
+
+		/**<summary>Selects everything in the spinner.</summary>*/
+		public void SelectAll() {
+			textBox.Focusable = true;
+			textBox.Focus();
+			textBox.SelectAll();
+		}
+
+		#endregion
+		//=========== HELPERS ============
+		#region Helpers
+
+		/**<summary>Updates the state of the spinner.</summary>*/
 		private void UpdateSpinner() {
 			spinner.ValidSpinDirection = ValidSpinDirections.None;
 			spinner.ValidSpinDirection |= (number != maximum ? ValidSpinDirections.Increase : ValidSpinDirections.None);
 			spinner.ValidSpinDirection |= (number != minimum ? ValidSpinDirections.Decrease : ValidSpinDirections.None);
 		}
+		/**<summary>Updates the state of the textbox.</summary>*/
 		private void UpdateTextBox() {
 			int caretIndex = textBox.CaretIndex;
 			textBox.Text = number.ToString();
 			textBox.CaretIndex = Math.Min(textBox.Text.Length, caretIndex);
 			UpdateTextBoxError();
 		}
+		/**<summary>Updates the state of the textbox.</summary>*/
 		private void UpdateTextBox(string newText, int newCaretIndex) {
 			int caretIndex = textBox.CaretIndex;
 			textBox.Text = newText;
 			textBox.CaretIndex = Math.Min(textBox.Text.Length, newCaretIndex);
 			UpdateTextBoxError();
 		}
+		/**<summary>Updates the error state of the textbox.</summary>*/
 		private void UpdateTextBoxError() {
 			bool error = false;
 			try {
@@ -137,11 +205,9 @@ namespace TerrariaMidiPlayer.Controls {
 				textBox.Foreground = new SolidColorBrush(Color.FromRgb(0, 0, 0));
 		}
 
-		public void SelectAll() {
-			textBox.Focusable = true;
-			textBox.Focus();
-			textBox.SelectAll();
-		}
+		#endregion
+		//============ EVENTS ============
+		#region Events
 
 		private void OnTextInput(object sender, TextCompositionEventArgs e) {
 			int oldValue = number;
@@ -201,12 +267,11 @@ namespace TerrariaMidiPlayer.Controls {
 				}
 				if (number != oldValue) {
 					UpdateSpinner();
-					RaiseEvent(new RoutedEventArgs(NumericUpDown.ValueChangedEvent));
+					RaiseEvent(new ValueChangedEventArgs<int>(IntSpinner.ValueChangedEvent, oldValue, number));
 				}
 			}
 			UpdateTextBoxError();
 		}
-
 		private void OnTextChanged(object sender, TextChangedEventArgs e) {
 			int oldValue = number;
 			try {
@@ -246,12 +311,11 @@ namespace TerrariaMidiPlayer.Controls {
 			}
 			if (number != oldValue) {
 				UpdateSpinner();
-				RaiseEvent(new RoutedEventArgs(NumericUpDown.ValueChangedEvent));
+				RaiseEvent(new ValueChangedEventArgs<int>(IntSpinner.ValueChangedEvent, oldValue, number));
 			}
 			
 			UpdateTextBoxError();
 		}
-
 		private void OnSpinnerSpin(object sender, SpinEventArgs e) {
 			int oldValue = number;
 			if (e.Direction == SpinDirection.Increase)
@@ -262,17 +326,16 @@ namespace TerrariaMidiPlayer.Controls {
 				UpdateSpinner();
 				UpdateTextBox();
 				textBox.CaretIndex = textBox.Text.Length;
-				RaiseEvent(new RoutedEventArgs(NumericUpDown.ValueChangedEvent));
+				RaiseEvent(new ValueChangedEventArgs<int>(IntSpinner.ValueChangedEvent, oldValue, number));
 			}
 		}
-
+		private void OnGotFocus(object sender, RoutedEventArgs e) {
+			this.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
+		}
 		private void OnFocusLost(object sender, RoutedEventArgs e) {
 			UpdateTextBox();
 		}
 
-		private void OnGotFocus(object sender, RoutedEventArgs e) {
-			this.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
-			//textBox.Focus();
-		}
+		#endregion
 	}
 }

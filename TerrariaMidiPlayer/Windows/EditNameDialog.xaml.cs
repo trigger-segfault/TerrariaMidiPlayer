@@ -13,11 +13,12 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
 namespace TerrariaMidiPlayer.Windows {
-	/// <summary>
-	/// Interaction logic for EditNameWindow.xaml
-	/// </summary>
+	/**<summary>A dialog for editing the name of something.</summary>*/
 	public partial class EditNameDialog : Window {
+		//========= CONSTRUCTORS =========
+		#region Constructors
 
+		/**<summary>Constructs the edit name window.</summary>*/
 		public EditNameDialog(string name) {
 			InitializeComponent();
 
@@ -26,16 +27,24 @@ namespace TerrariaMidiPlayer.Windows {
 			textBox.SelectAll();
 		}
 
-		private void OnOKClicked(object sender, RoutedEventArgs e) {
-			DialogResult = true;
-		}
+		#endregion
+		//============ EVENTS ============
+		#region Events
 
 		private void OnPreviewKeyDown(object sender, KeyEventArgs e) {
 			if (e.Key == Key.Return) {
 				DialogResult = true;
 			}
 		}
+		private void OnOKClicked(object sender, RoutedEventArgs e) {
+			DialogResult = true;
+		}
 
+		#endregion
+		//=========== SHOWING ============
+		#region Showing
+
+		/**<summary>Shows the edit name window.</summary>*/
 		public static string ShowDialog(Window owner, string name) {
 			EditNameDialog window = new EditNameDialog(name);
 			window.Owner = owner;
@@ -45,5 +54,7 @@ namespace TerrariaMidiPlayer.Windows {
 			}
 			return null;
 		}
+
+		#endregion
 	}
 }

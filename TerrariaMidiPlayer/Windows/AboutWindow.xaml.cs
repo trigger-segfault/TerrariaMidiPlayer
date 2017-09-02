@@ -15,10 +15,12 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
 namespace TerrariaMidiPlayer.Windows {
-	/// <summary>
-	/// Interaction logic for AboutWindow.xaml
-	/// </summary>
+	/**<summary>The window showing information about the program.</summary>*/
 	public partial class AboutWindow : Window {
+		//========= CONSTRUCTORS =========
+		#region Constructors
+
+		/**<summary>Constructs the about window.</summary>*/
 		public AboutWindow() {
 			InitializeComponent();
 
@@ -27,6 +29,11 @@ namespace TerrariaMidiPlayer.Windows {
 			this.labelBuildDate.Content = buildDate.ToShortDateString() + " (" + buildDate.ToShortTimeString() + ")";
 		}
 
+		#endregion
+		//=========== HELPERS ============
+		#region Helpers
+
+		/**<summary>Gets the build date of the program.</summary>*/
 		private DateTime GetLinkerTime(Assembly assembly, TimeZoneInfo target = null) {
 			var filePath = assembly.Location;
 			const int c_PeHeaderOffset = 60;
@@ -49,14 +56,25 @@ namespace TerrariaMidiPlayer.Windows {
 			return localTime;
 		}
 
-		private void OnOKClicked(object sender, RoutedEventArgs e) {
+		#endregion
+		//============ EVENTS ============
+		#region Events
+
+		private void OnCloseClicked(object sender, RoutedEventArgs e) {
 			DialogResult = true;
 		}
 
+		#endregion
+		//=========== SHOWING ============
+		#region Showing
+
+		/**<summary>Shows the window.</summary>*/
 		public static void Show(Window owner) {
 			AboutWindow window = new AboutWindow();
 			window.Owner = owner;
 			window.ShowDialog();
 		}
+
+		#endregion
 	}
 }

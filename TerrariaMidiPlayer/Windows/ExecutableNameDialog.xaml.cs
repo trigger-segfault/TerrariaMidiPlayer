@@ -14,36 +14,47 @@ using System.Windows.Shapes;
 using TerrariaMidiPlayer.Util;
 
 namespace TerrariaMidiPlayer.Windows {
-	/// <summary>
-	/// Interaction logic for ExecutableNameDialog.xaml
-	/// </summary>
+	/**<summary>A dialog for changing the name of the Terraria executable.</summary>*/
 	public partial class ExecutableNameDialog : Window {
+		//========= CONSTRUCTORS =========
+		#region Constructors
 
+		/**<summary>Constructs the executable name dialog.</summary>*/
 		public ExecutableNameDialog() {
 			InitializeComponent();
 
-			textBox.Text = TerrariaWindowLocator.ExeName;
+			textBox.Text = Config.ExecutableName;
 			textBox.Focus();
 			textBox.SelectAll();
 		}
 
-		private void OnOKClicked(object sender, RoutedEventArgs e) {
-			DialogResult = true;
-		}
+		#endregion
+		//============ EVENTS ============
+		#region Events
 
 		private void OnPreviewKeyDown(object sender, KeyEventArgs e) {
 			if (e.Key == Key.Return) {
 				DialogResult = true;
 			}
 		}
+		private void OnOKClicked(object sender, RoutedEventArgs e) {
+			DialogResult = true;
+		}
 
+		#endregion
+		//=========== SHOWING ============
+		#region Showing
+
+		/**<summary>Shows the executable name dialog.</summary>*/
 		public static void ShowDialog(Window owner) {
 			ExecutableNameDialog window = new ExecutableNameDialog();
 			window.Owner = owner;
 			var result = window.ShowDialog();
 			if (result != null && result.Value) {
-				TerrariaWindowLocator.ExeName = window.textBox.Text;
+				Config.ExecutableName = window.textBox.Text;
 			}
 		}
+
+		#endregion
 	}
 }

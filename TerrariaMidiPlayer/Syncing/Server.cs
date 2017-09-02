@@ -86,7 +86,7 @@ namespace TerrariaMidiPlayer.Syncing {
 			get { return connections; }
 		}
 
-		public bool IsPaused {
+		public bool IsPlaying {
 			get { return paused; }
 			set { paused = value; }
 		}

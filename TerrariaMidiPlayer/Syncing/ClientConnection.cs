@@ -87,7 +87,7 @@ namespace TerrariaMidiPlayer.Syncing {
 				attemptCount = 0;
 				return true;
 			}
-			catch (Exception e) {
+			catch (Exception) {
 				client = null;
 				return false;
 			}
@@ -120,7 +120,7 @@ namespace TerrariaMidiPlayer.Syncing {
 					ConnectionLost?.Invoke(this);
 				return true;
 			}
-			catch (Exception e) {
+			catch (Exception) {
 				client = null;
 				if (connectionLost)
 					ConnectionLost?.Invoke(this);
@@ -138,7 +138,7 @@ namespace TerrariaMidiPlayer.Syncing {
 			}
 			catch (ThreadAbortException) { }
 			catch (ThreadInterruptedException) { }
-			catch (Exception e) {
+			catch (Exception) {
 				client.Close();
 			}
 			return false;
@@ -175,7 +175,7 @@ namespace TerrariaMidiPlayer.Syncing {
 								moreWork = true;
 						}
 					}
-					catch (SocketException ex) {
+					catch (SocketException) {
 						client.Close();
 					}
 					Thread.Sleep(playing ? PlayingIdleTime : IdleTime);

@@ -14,7 +14,7 @@ A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi
 * **Language:** C#, WPF
 
 ## Requirements for Running
-* .NET Framwork 4.5.2 | [Offline Installer](https://www.microsoft.com/en-us/download/details.aspx?id=42642) | [Web Installer](https://www.microsoft.com/en-us/download/details.aspx?id=42643)
+* .NET Framework 4.5.2 | [Offline Installer](https://www.microsoft.com/en-us/download/details.aspx?id=42642) | [Web Installer](https://www.microsoft.com/en-us/download/details.aspx?id=42643)
 * Windows 7 or later
 * Terraria for PC <sup>(will not play midis when it's not running)</sup>
 * Terraria zoom setting must be at 100%

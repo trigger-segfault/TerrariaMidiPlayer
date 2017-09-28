@@ -5,12 +5,12 @@ A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi
 
 ### [Wiki](https://github.com/trigger-death/TerrariaMidiPlayer/wiki) | [Credits](https://github.com/trigger-death/TerrariaMidiPlayer/wiki/Credits) | [Image Album](http://imgur.com/a/LtTvj)
 
-### [![Get Terraria Midi Player](http://i.imgur.com/klNsxtL.png)](https://github.com/trigger-death/TerrariaMidiPlayer/releases/tag/1.0.1.0)
+### [![Get Terraria Midi Player](http://i.imgur.com/klNsxtL.png)](https://github.com/trigger-death/TerrariaMidiPlayer/releases/tag/1.1.0.0)
 
 ## About
 
 * **Created By:** Robert Jordan
-* **Version:** 1.0.1.0
+* **Version:** 1.1.0.0
 * **Language:** C#, WPF
 
 ## Requirements for Running
@@ -22,6 +22,7 @@ A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi
 ![100% Zoom Required](http://i.imgur.com/hZ9tm0U.png)
 
 ## Features
+* Load Midis or ABC Notation files.
 * Automatically attempts to fit notes within Terraria's two octaves.
 * Midi customization:
   * Enable and disable tracks
@@ -34,6 +35,8 @@ A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi
 * All settings are saved upon closing the window.
 * Connect with others hosting from their Terraria Midi Player to sync songs for a performance *(Experimental)*
 * Automatically stays focused on Terraria while playing songs in order to avoid accidental clicks. (Can be disabled)
+* Play midis within the program to hear what they would sound like in Terraria.
+* View a graph of all tracks within a midi to see where restrictions are causing problems.
 
 ## Tips
 * Click on the projectile angle and drag for easy aiming.

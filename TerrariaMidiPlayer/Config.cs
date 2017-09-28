@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Xml;
+using Sanford.Multimedia.Midi;
 using TerrariaMidiPlayer.Util;
 using TerrariaMidiPlayer.Windows;
 
@@ -127,7 +128,9 @@ namespace TerrariaMidiPlayer {
 		/**<summary>The version of the config file.</summary>*/
 		public const int ConfigVersion = 1;
 		/**<summary>The path to the config file.</summary>*/
-		public static readonly string ConfigPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Config.xml");
+		public static readonly string OldConfigPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Config.xml");
+		/**<summary>The path to the config file.</summary>*/
+		public static readonly string ConfigPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "TerrariaMidiPlayer.xml");
 
 		#endregion
 		//=========== MEMBERS ============
@@ -154,14 +157,29 @@ namespace TerrariaMidiPlayer {
 		public static int MidiCount {
 			get { return Midis.Count; }
 		}
+		/**<summary>True if playback is done within the program instead of Terraria.</summary>*/
+		public static bool PianoMode { get; set; } = false;
+		/**<summary>True if playback is done within the program instead of Terraria.</summary>*/
+		public static Sequencer Sequencer { get; } = new Sequencer();
+		/**<summary>The output device for previewing midis.</summary>*/
+		public static OutputDevice OutputDevice { get; } = new OutputDevice(0);
 
-		/**<summary>The name of the Terraria executable. Used to obtain the process.</summary>*/
-		public static string ExecutableName { get; set; } = "Terraria";
+		/**<summary>The names of the Terraria executable. Used to obtain the process. Separated by newlines.</summary>*/
+		public static string ExecutableNames { get; set; } = "Terraria";
 
 		/**<summary>True if the program does not require focus on itself or in Terraria for the close keybind.</summary>*/
 		public static bool CloseNoFocus { get; set; } = false;
 		/**<summary>True if the program does not require focus on itself or in Terraria for the playback keybinds.</summary>*/
 		public static bool PlaybackNoFocus { get; set; } = false;
+		/**<summary>True if the mount keybind is disabled while the enter key is toggled.</summary>*/
+		public static bool DisableMountWhenTalking { get; set; } = false;
+
+		/**<summary>True if midi track names are used by default.</summary>*/
+		public static bool UseTrackNames { get; set; } = false;
+		/**<summary>True if notes are wrapped when in piano mode.</summary>*/
+		public static bool WrapPianoMode { get; set; } = true;
+		/**<summary>True if notes are skipped when in piano mode.</summary>*/
+		public static bool SkipPianoMode { get; set; } = true;
 
 		/**<summary>Gets the last exception from Load or Save.</summary>*/
 		public static Exception LastException { get; private set; } = null;
@@ -208,7 +226,7 @@ namespace TerrariaMidiPlayer {
 		}
 		/**<summary>Checks if a config file exists.</summary>*/
 		public static bool ConfigExists() {
-			return File.Exists(ConfigPath);
+			return File.Exists(ConfigPath) || File.Exists(OldConfigPath);
 		}
 		/**<summary>Loads the settings from the config file.</summary>*/
 		public static bool Load() {
@@ -217,7 +235,15 @@ namespace TerrariaMidiPlayer {
 				XmlElement element;
 				XmlAttribute attribute;
 				XmlDocument doc = new XmlDocument();
-				doc.Load(ConfigPath);
+				bool deleteOldConfig = false;
+				if (File.Exists(ConfigPath)) {
+					doc.Load(ConfigPath);
+				}
+				else {
+					doc.Load(OldConfigPath);
+					if (doc.SelectSingleNode("TerrariaMidiPlayer") != null)
+						deleteOldConfig = true;
+				}
 
 				int intValue;
 				ushort ushortValue;
@@ -225,33 +251,33 @@ namespace TerrariaMidiPlayer {
 				double doubleValue;
 				Keybind keybindValue;
 				
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Version");
-				if (node != null && int.TryParse(node.InnerText, out intValue) && (intValue > ConfigVersion || intValue <= 0))
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Version");
+				if (node == null || !int.TryParse(node.InnerText, out intValue) || intValue > ConfigVersion || intValue <= 0)
 					return false;
 				
 				#region Settings
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/ExecutableName");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/ExecutableName");
 				if (node != null)
-					ExecutableName = node.InnerText;
+					ExecutableNames = node.InnerText;
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/UseTime");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/UseTime");
 				if (node != null && int.TryParse(node.InnerText, out intValue))
 					UseTime = intValue;
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/ClickTime");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/ClickTime");
 				if (node != null && int.TryParse(node.InnerText, out intValue))
 					ClickTime = intValue;
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/ChecksEnabled");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/ChecksEnabled");
 				if (node != null && bool.TryParse(node.InnerText, out boolValue))
 					ChecksEnabled = boolValue;
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/CheckFrequency");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/CheckFrequency");
 				if (node != null && int.TryParse(node.InnerText, out intValue))
 					CheckFrequency = intValue;
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Mount");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Mount");
 				if (node != null) {
 					for (int i = 0; i < Mount.Mounts.Length; i++) {
 						if (string.Compare(node.InnerText, Mount.Mounts[i].Name, true) == 0) {
@@ -261,44 +287,60 @@ namespace TerrariaMidiPlayer {
 					}
 				}
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/ProjectileAngle");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/ProjectileAngle");
 				if (node != null && double.TryParse(node.InnerText, out doubleValue))
 					ProjectileAngle = doubleValue;
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/ProjectileRange");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/ProjectileRange");
 				if (node != null && double.TryParse(node.InnerText, out doubleValue))
 					ProjectileRange = doubleValue;
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/CloseNoFocus");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/CloseNoFocus");
 				if (node != null && bool.TryParse(node.InnerText, out boolValue))
 					CloseNoFocus = boolValue;
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/PlaybackNoFocus");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/PlaybackNoFocus");
 				if (node != null && bool.TryParse(node.InnerText, out boolValue))
 					PlaybackNoFocus = boolValue;
+
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/DisableMountWhenTalking");
+				if (node != null && bool.TryParse(node.InnerText, out boolValue))
+					DisableMountWhenTalking = boolValue;
+
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/UseTrackNames");
+				if (node != null && bool.TryParse(node.InnerText, out boolValue))
+					UseTrackNames = boolValue;
+
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/WrapPianoMode");
+				if (node != null && bool.TryParse(node.InnerText, out boolValue))
+					WrapPianoMode = boolValue;
+
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/SkipPianoMode");
+				if (node != null && bool.TryParse(node.InnerText, out boolValue))
+					SkipPianoMode = boolValue;
 
 				#endregion
 				//--------------------------------
 				#region Keybinds
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Keybinds/Play");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Keybinds/Play");
 				if (node != null && Keybind.TryParse(node.InnerText, out keybindValue))
 					Keybinds.Play = keybindValue;
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Keybinds/Pause");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Keybinds/Pause");
 				if (node != null && Keybind.TryParse(node.InnerText, out keybindValue))
 					Keybinds.Pause = keybindValue;
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Keybinds/Stop");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Keybinds/Stop");
 				if (node != null && Keybind.TryParse(node.InnerText, out keybindValue))
 					Keybinds.Stop = keybindValue;
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Keybinds/Close");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Keybinds/Close");
 				if (node != null && Keybind.TryParse(node.InnerText, out keybindValue)) {
 					Keybinds.Close = keybindValue;
 				}
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Keybinds/Mount");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Keybinds/Mount");
 				if (node != null && Keybind.TryParse(node.InnerText, out keybindValue))
 					Keybinds.Mount = keybindValue;
 
@@ -306,35 +348,35 @@ namespace TerrariaMidiPlayer {
 				//--------------------------------
 				#region Syncing
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/SyncType");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Syncing/SyncType");
 				if (node != null)
 					Syncing.SyncType = ((string.Compare(node.InnerText, "Host", true) == 0) ? SyncTypes.Host : SyncTypes.Client);
 				
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/ClientIPAddress");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Syncing/ClientIPAddress");
 				if (node != null) Syncing.ClientIPAddress = node.InnerText;
 				
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/ClientPort");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Syncing/ClientPort");
 				if (node != null && ushort.TryParse(node.InnerText, out ushortValue))
 					Syncing.ClientPort = ushortValue;
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/ClientUsername");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Syncing/ClientUsername");
 				if (node != null) Syncing.ClientUsername = node.InnerText;
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/ClientPassword");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Syncing/ClientPassword");
 				if (node != null) Syncing.ClientPassword = node.InnerText;
 				
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/ClientTimeOffset");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Syncing/ClientTimeOffset");
 				if (node != null && int.TryParse(node.InnerText, out intValue))
 					Syncing.ClientTimeOffset = intValue;
 				
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/HostPort");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Syncing/HostPort");
 				if (node != null && ushort.TryParse(node.InnerText, out ushortValue))
 					Syncing.HostPort = ushortValue;
 
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/HostPassword");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Syncing/HostPassword");
 				if (node != null) Syncing.HostPassword = node.InnerText;
 				
-				node = doc.SelectSingleNode("/TerrariaMidiPlayer/Settings/Syncing/HostWait");
+				node = doc.SelectSingleNode("TerrariaMidiPlayer/Settings/Syncing/HostWait");
 				if (node != null && int.TryParse(node.InnerText, out intValue))
 					Syncing.HostWait = intValue;
 
@@ -342,7 +384,7 @@ namespace TerrariaMidiPlayer {
 				//--------------------------------
 				#region Midis
 
-				XmlNodeList midiList = doc.SelectNodes("/TerrariaMidiPlayer/Midis/Midi");
+				XmlNodeList midiList = doc.SelectNodes("TerrariaMidiPlayer/Midis/Midi");
 				for (int i = 0; i < midiList.Count; i++) {
 					node = midiList[i];
 					Midi midi = new Midi();
@@ -355,7 +397,7 @@ namespace TerrariaMidiPlayer {
 
 							element = node["NoteOffset"];
 							if (element != null && int.TryParse(element.InnerText, out intValue))
-								midi.NoteOffset = intValue;
+								midi.NoteOffset = Math.Max(-11, Math.Min(11, intValue));
 
 							element = node["Speed"];
 							if (element != null && int.TryParse(element.InnerText, out intValue))
@@ -385,7 +427,7 @@ namespace TerrariaMidiPlayer {
 
 									attribute = node.Attributes["OctaveOffset"];
 									if (attribute != null && int.TryParse(attribute.Value, out intValue))
-										midi.GetTrackSettingsAt(j).OctaveOffset = intValue;
+										midi.GetTrackSettingsAt(j).OctaveOffset = Math.Max(-1, Math.Min(8, intValue));
 								}
 							}
 
@@ -400,6 +442,13 @@ namespace TerrariaMidiPlayer {
 					MidiIndex = 0;
 
 				#endregion
+
+				if (deleteOldConfig && Save()) {
+					try {
+						File.Delete(OldConfigPath);
+					}
+					catch { }
+				}
 			}
 			catch (Exception ex) {
 				LastException = ex;
@@ -427,7 +476,7 @@ namespace TerrariaMidiPlayer {
 				midiPlayer.AppendChild(setting);
 
 				element = doc.CreateElement("ExecutableName");
-				element.AppendChild(doc.CreateTextNode(ExecutableName));
+				element.AppendChild(doc.CreateTextNode(ExecutableNames));
 				setting.AppendChild(element);
 
 				element = doc.CreateElement("UseTime");
@@ -464,6 +513,22 @@ namespace TerrariaMidiPlayer {
 
 				element = doc.CreateElement("PlaybackNoFocus");
 				element.AppendChild(doc.CreateTextNode(PlaybackNoFocus.ToString()));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("DisableMountWhenTalking");
+				element.AppendChild(doc.CreateTextNode(DisableMountWhenTalking.ToString()));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("UseTrackNames");
+				element.AppendChild(doc.CreateTextNode(UseTrackNames.ToString()));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("WrapPianoMode");
+				element.AppendChild(doc.CreateTextNode(WrapPianoMode.ToString()));
+				setting.AppendChild(element);
+
+				element = doc.CreateElement("SkipPianoMode");
+				element.AppendChild(doc.CreateTextNode(SkipPianoMode.ToString()));
 				setting.AppendChild(element);
 
 				#endregion

@@ -7,6 +7,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Xml;
 using IOPath = System.IO.Path;
+using TextPlayer.ABC;
 
 namespace TerrariaMidiPlayer.Util {
 	/**<summary>The list of notes available in Terraria.</summary>*/
@@ -51,6 +52,8 @@ namespace TerrariaMidiPlayer.Util {
 			public int HighestNote;
 			/**<summary>The lowest note in the track.</summary>*/
 			public int LowestNote;
+			/**<summary>The number of chords played in the track.</summary>*/
+			public int Chords;
 			/**<summary>The number of notes in the track.</summary>*/
 			public int Notes;
 			/**<summary>The track object used for referencing.</summary>*/
@@ -70,12 +73,19 @@ namespace TerrariaMidiPlayer.Util {
 			/**<summary>The proper name of the track.</summary>*/
 			public string ProperName {
 				get {
-					if (Name == "")
-						return "Track " + (Index + 1).ToString();
-					else
+					if (string.IsNullOrWhiteSpace(Name)) {
+						if (!Config.UseTrackNames || string.IsNullOrWhiteSpace(TrackName))
+							return "Track " + (Index + 1).ToString();
+						else
+							return TrackName;
+					}
+					else {
 						return Name;
+					}
 				}
 			}
+			/**<summary>The real name of the track.</summary>*/
+			public string TrackName;
 
 			/**<summary>Constructs the default track settings.</summary>*/
 			public TrackSettings() {
@@ -83,6 +93,7 @@ namespace TerrariaMidiPlayer.Util {
 				OctaveOffset = 4;
 				Index = 0;
 				Name = "";
+				TrackName = "";
 			}
 		}
 
@@ -130,7 +141,13 @@ namespace TerrariaMidiPlayer.Util {
 			noteOffset = 0;
 			speed = 100;
 			try {
-				sequence.Load(path);
+				string ext = IOPath.GetExtension(path).ToLower();
+				if (ext == ".abc") {
+					sequence = ABCConverter.CreateSequenceFromABCFile(path);
+				}
+				else {
+					sequence.Load(path);
+				}
 				this.path = path;
 				int index = 0;
 				foreach (Track track in sequence) {
@@ -138,6 +155,11 @@ namespace TerrariaMidiPlayer.Util {
 					TrackData trackData = new TrackData();
 					trackData.TrackObj = track;
 					settings.Index = index;
+					if (!string.IsNullOrWhiteSpace(track.Name))
+						settings.TrackName = track.Name;
+
+					int lastTick = -1;
+					bool chord = false;
 
 					// Scan all of the notes
 					for (int i = 0; i < track.Count; i++) {
@@ -145,7 +167,23 @@ namespace TerrariaMidiPlayer.Util {
 						if (midiEvent.MidiMessage.MessageType == MessageType.Channel) {
 							var message = midiEvent.MidiMessage as ChannelMessage;
 							if (message.Data2 > 0 && message.Command == ChannelCommand.NoteOn) {
+								// Check for chords
+								int newTick = midiEvent.AbsoluteTicks;
+								if (newTick == lastTick) {
+									if (!chord) {
+										trackData.Chords++;
+										chord = true;
+									}
+								}
+								else {
+									lastTick = newTick;
+									chord = false;
+								}
+
+								// Increment note count
 								trackData.Notes++;
+
+								// Check for highest and lowest note
 								if (message.Data1 < trackData.LowestNote || trackData.LowestNote == 0)
 									trackData.LowestNote = message.Data1;
 								if (message.Data1 > trackData.HighestNote)
@@ -243,6 +281,10 @@ namespace TerrariaMidiPlayer.Util {
 		/**<summary>The last exception when loading.</summary>*/
 		public Exception LoadException {
 			get { return exception; }
+		}
+		/**<summary>True if the midi is an ABC notation file.</summary>*/
+		public bool IsABC {
+			get { return IOPath.GetExtension(path).ToLower() == ".abc"; }
 		}
 
 		#endregion

@@ -41,6 +41,11 @@ namespace TerrariaMidiPlayer {
 				return;
 			mounted = checkBoxMounted.IsChecked.Value;
 		}
+		private void OnTalkingChanged(object sender, RoutedEventArgs e) {
+			if (!loaded)
+				return;
+			talking = checkBoxTalking.IsChecked.Value;
+		}
 		private void OnMountChanged(object sender, SelectionChangedEventArgs e) {
 			if (!loaded)
 				return;
@@ -55,6 +60,15 @@ namespace TerrariaMidiPlayer {
 		//--------------------------------
 		#region Player
 
+		private void OnPianoToggled(object sender, RoutedEventArgs e) {
+			if (!loaded)
+				return;
+			if (Config.Sequencer.Position > 1)
+				Pause();
+			else
+				Stop();
+			Config.PianoMode = toggleButtonPiano.IsChecked.Value;
+		}
 		private void OnStopToggled(object sender, RoutedEventArgs e) {
 			if (server != null)
 				HostStop();
@@ -62,7 +76,7 @@ namespace TerrariaMidiPlayer {
 				Stop();
 		}
 		private void OnPlayToggled(object sender, RoutedEventArgs e) {
-			if (server != null)
+			if (server != null && !Config.PianoMode)
 				HostStartPlay();
 			else
 				Play();
@@ -76,8 +90,8 @@ namespace TerrariaMidiPlayer {
 		private void OnMidiPositionChanged(object sender, RoutedPropertyChangedEventArgs<double> e) {
 			if (!loaded)
 				return;
-			sequencer.Position = sequencer.ProgressToTicks(e.NewValue);
-			labelMidiPosition.Content = MillisecondsToString(sequencer.CurrentTime) + "/" + MillisecondsToString(sequencer.Duration);
+			Config.Sequencer.Position = Config.Sequencer.ProgressToTicks(e.NewValue);
+			labelMidiPosition.Content = MillisecondsToString(Config.Sequencer.CurrentTime) + "/" + MillisecondsToString(Config.Sequencer.Duration);
 			toggleButtonStop.IsChecked = (e.NewValue == 0);
 			toggleButtonPlay.IsChecked = false;
 			toggleButtonPause.IsChecked = (e.NewValue != 0);

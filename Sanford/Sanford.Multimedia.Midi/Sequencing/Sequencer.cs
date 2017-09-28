@@ -486,6 +486,7 @@ namespace Sanford.Multimedia.Midi
 				if (tempoTrackFound)
 					break;
 			}
+			
 			if (tempoDuration.Tempo == 0)
 				tempoDuration.Tempo = clock.Tempo;
 			tempoDuration.Length = sequence.GetLength() - tempoDuration.Start;

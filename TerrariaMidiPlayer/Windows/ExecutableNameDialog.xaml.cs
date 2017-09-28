@@ -23,20 +23,15 @@ namespace TerrariaMidiPlayer.Windows {
 		public ExecutableNameDialog() {
 			InitializeComponent();
 
-			textBox.Text = Config.ExecutableName;
+			textBox.Text = Config.ExecutableNames;
 			textBox.Focus();
-			textBox.SelectAll();
+			textBox.Select(textBox.Text.Length, 0);
 		}
 
 		#endregion
 		//============ EVENTS ============
 		#region Events
 
-		private void OnPreviewKeyDown(object sender, KeyEventArgs e) {
-			if (e.Key == Key.Return) {
-				DialogResult = true;
-			}
-		}
 		private void OnOKClicked(object sender, RoutedEventArgs e) {
 			DialogResult = true;
 		}
@@ -51,7 +46,7 @@ namespace TerrariaMidiPlayer.Windows {
 			window.Owner = owner;
 			var result = window.ShowDialog();
 			if (result != null && result.Value) {
-				Config.ExecutableName = window.textBox.Text;
+				Config.ExecutableNames = window.textBox.Text;
 			}
 		}
 

@@ -1,0 +1,102 @@
+﻿<Window x:Class="TerrariaMidiPlayer.Windows.TrackGraphWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TerrariaMidiPlayer.Controls"
+        mc:Ignorable="d"
+        Title="Track Graph" Width="554" Height="326" MinWidth="554" MinHeight="326" Background="#FFF9F9F9" ShowInTaskbar="False" Icon="/TerrariaMidiPlayer;component/Resources/Icons/Graph.png" SnapsToDevicePixels="True" UseLayoutRounding="True" Closing="OnWindowClosing" SizeChanged="OnWindowSizeChanged" PreviewMouseDown="OnPreviewMouseDown">
+    <Window.Resources>
+        <Style TargetType="{x:Type ListBox}">
+            <Style.Resources>
+                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="{x:Static SystemColors.HighlightColor}"/>
+                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="{x:Static SystemColors.HighlightTextColor}"/>
+            </Style.Resources>
+        </Style>
+        <Style x:Key="FlatButtonImageDisablable" TargetType="{x:Type Image}">
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.5" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Label Content="Tracks" HorizontalAlignment="Left" Margin="10,5,0,0" VerticalAlignment="Top"/>
+        <ListBox x:Name="listTracks" Margin="10,32,0,93" SelectionChanged="OnTrackChanged" HorizontalAlignment="Left" Width="100"/>
+
+        <Border Margin="123,8,10,0" Background="White" BorderBrush="#FF828790" BorderThickness="1" VerticalAlignment="Top" Height="19">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Rectangle StrokeThickness="2" Width="10" Height="10" Fill="LightYellow" Stroke="Gold" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Instrument Range" FontSize="10" VerticalAlignment="Center" Margin="5,0,10,0" />
+                <CheckBox x:Name="checkBoxValid" IsChecked="True" Click="OnValidChecked">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Ellipse StrokeThickness="0" Width="6" Height="6" Fill="Violet" VerticalAlignment="Center"/>
+                        <TextBlock Text="Valid Note" FontSize="10" VerticalAlignment="Center" Margin="4,0,10,0" />
+                    </StackPanel>
+                </CheckBox>
+                <CheckBox x:Name="checkBoxWrapped" IsChecked="True" Click="OnWrappedChecked">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Ellipse StrokeThickness="0" Width="6" Height="6" Fill="Red" VerticalAlignment="Center"/>
+                        <TextBlock Text="Wrapped Note" FontSize="10" VerticalAlignment="Center" Margin="4,0,10,0" />
+                    </StackPanel>
+                </CheckBox>
+                <CheckBox x:Name="checkBoxSkipped" IsChecked="True" Click="OnSkippedChecked">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Ellipse StrokeThickness="0" Width="6" Height="6" Fill="Blue" VerticalAlignment="Center"/>
+                        <TextBlock Text="Skipped Note" FontSize="10" VerticalAlignment="Center" Margin="4,0,0,0" />
+                    </StackPanel>
+                </CheckBox>
+            </StackPanel>
+        </Border>
+        <Border Margin="123,32,10,93" Background="White" BorderBrush="#FF828790" BorderThickness="1">
+            <Grid>
+                <local:TrackGraph x:Name="trackGraph"/>
+                <Grid x:Name="playArea" Margin="34,12,6,11" Background="Transparent" MouseLeftButtonDown="OnLeftMouseDown" MouseLeftButtonUp="OnLeftMouseUp" MouseMove="OnMouseMove">
+                    <Rectangle x:Name="playMarker" Width="2" Stroke="Cyan" HorizontalAlignment="Left" />
+                </Grid>
+            </Grid>
+        </Border>
+
+        <Label x:Name="labelHighestNote" Content="Highest Note:" HorizontalAlignment="Left" Margin="10,0,0,60" VerticalAlignment="Bottom"/>
+        <Label x:Name="labelLowestNote" Content="Lowest Note:" HorizontalAlignment="Left" Margin="10,0,0,34" VerticalAlignment="Bottom"/>
+        <Label x:Name="labelDuration" Content="Duration:" HorizontalAlignment="Left" Margin="10,0,0,8" VerticalAlignment="Bottom"/>
+        
+        <Label x:Name="labelChords" Content="Chords:" HorizontalAlignment="Left" Margin="152,0,0,60" VerticalAlignment="Bottom"/>
+        <Label x:Name="labelNotes" Content="Notes:" HorizontalAlignment="Left" Margin="152,0,0,34" VerticalAlignment="Bottom"/>
+        <CheckBox x:Name="checkBoxTrackEnabled" Content="Enabled" HorizontalAlignment="Left" Margin="157,0,0,13" VerticalAlignment="Bottom" Click="OnTrackEnabledClicked" IsChecked="True" Padding="4,-1,5,0" RenderTransformOrigin="0.516,5.667"/>
+        
+        <Label Content="Octave Offset" HorizontalAlignment="Left" Margin="241,0,0,60" VerticalAlignment="Bottom"/>
+        <local:IntSpinner x:Name="numericOctaveOffset" Margin="328,0,0,62" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="66" Increment="1" Maximum="8" Value="0" ValueChanged="OnOctaveOffsetChanged" Minimum="-1"/>
+        <Label Content="Note Offset" HorizontalAlignment="Left" Margin="251,0,0,34" VerticalAlignment="Bottom"/>
+        <local:IntSpinner x:Name="numericNoteOffset" Margin="328,0,0,36" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="66" Increment="1" Maximum="11" Value="0" ValueChanged="OnNoteOffsetChanged" Minimum="-11"/>
+        <Label Content="Speed (%)" HorizontalAlignment="Left" Margin="260,0,0,8" VerticalAlignment="Bottom"/>
+        <local:IntSpinner x:Name="numericSpeed" Margin="328,0,0,10" HorizontalAlignment="Left" VerticalAlignment="Bottom" Width="66" Increment="1" Maximum="10000" Value="100" ValueChanged="OnSpeedChanged" Minimum="1"/>
+
+        <ToggleButton x:Name="toggleButtonSkipPianoMode" Style="{StaticResource {x:Static ToolBar.ToggleButtonStyleKey}}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="20" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="0,0,112,44" Click="OnSkipPianoMode" ToolTip="Skip notes in Piano Mode like in Terrara">
+            <Image Source="/Resources/Icons/PianoSkip.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
+        </ToggleButton>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,66">
+            <ToggleButton x:Name="toggleButtonWrapPianoMode" Style="{StaticResource {x:Static ToolBar.ToggleButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="0,0,2,0" Click="OnWrapPianoMode" ToolTip="Wrap notes in Piano Mode like in Terrara">
+                <Image Source="/Resources/Icons/PianoWrap.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
+            </ToggleButton>
+            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"/>
+            <ToggleButton x:Name="toggleButtonPiano" Style="{StaticResource {x:Static ToolBar.ToggleButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="2,0,2,0" Click="OnPianoToggled" ToolTip="Piano Mode: Play midi in program instead of Terraria">
+                <Image Source="/Resources/Icons/Piano.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
+            </ToggleButton>
+            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"/>
+            <ToggleButton x:Name="toggleButtonStop" Style="{StaticResource {x:Static ToolBar.ToggleButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="2,0,0,0" Click="OnStopToggled" IsChecked="True" ToolTip="Stop midi playback">
+                <Image Source="/Resources/Icons/Stop.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
+            </ToggleButton>
+            <ToggleButton x:Name="toggleButtonPlay" Style="{StaticResource {x:Static ToolBar.ToggleButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="2,0,0,0" Click="OnPlayToggled" ToolTip="Start midi playback">
+                <Image Source="/Resources/Icons/Play.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
+            </ToggleButton>
+            <ToggleButton x:Name="toggleButtonPause" Style="{StaticResource {x:Static ToolBar.ToggleButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="2,0,0,0" Click="OnPauseToggled" ToolTip="Pause midi playback">
+                <Image Source="/Resources/Icons/Pause.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
+            </ToggleButton>
+        </StackPanel>
+        <Label x:Name="labelMidiPosition" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,14,41" Content="-:--/-:--" HorizontalContentAlignment="Right" Padding="0" VerticalContentAlignment="Center" Height="20" MinWidth="52" Width="Auto"/>
+
+        <Button Content="Close" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="80" IsCancel="True" />
+    </Grid>
+</Window>

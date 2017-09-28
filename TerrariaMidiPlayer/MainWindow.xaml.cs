@@ -31,6 +31,7 @@ using TerrariaMidiPlayer.Util;
 using TerrariaMidiPlayer.Windows;
 using TerrariaMidiPlayer.Controls;
 using System.Runtime.InteropServices;
+using Sanford.Multimedia.Midi.UI;
 
 namespace TerrariaMidiPlayer {
 	/**<summary>The main window running Terraria Midi Player.</summary>*/
@@ -38,27 +39,37 @@ namespace TerrariaMidiPlayer {
 		//=========== MEMBERS ============
 		#region Members
 
-		Stopwatch watch = new Stopwatch();
+		/**<summary>The global key events hook.</summary>*/
 		IKeyboardMouseEvents globalHook = Hook.GlobalEvents();
+		/**<summary>The random number generator.</summary>*/
 		Random rand = new Random();
+		
+		/**<summary>Keeps track of when the next note can be played.</summary>*/
+		Stopwatch watch = new Stopwatch();
+		/**<summary>The playback UI update timer.</summary>*/
 		Timer playbackUITimer = new Timer(100);
 
-		Sequencer sequencer = new Sequencer();
-
-		Stopwatch noteWatch = new Stopwatch();
-
+		/**<summary>The client area of Terraria.</summary>*/
 		Rect clientArea = new Rect(0, 0, 0, 0);
-		
+
+		/**<summary>True if the player is talking in Terraria.</summary>*/
+		bool talking = false;
+		/**<summary>True if the player is mounted.</summary>*/
 		bool mounted = false;
-
+		/**<summary>The number of notes before another check is performed.</summary>*/
 		int checkCount = 0;
-
+		/**<summary>True if the first note hasn't been played yet.</summary>*/
 		bool firstNote = true;
-		
-		bool loaded = false;
-		private DateTime syncTime;
-		private long syncTickCount;
+		/**<summary>The currently selected track.</summary>*/
 		int trackIndex = -1;
+
+		/**<summary>The initial time used for syncing.</summary>*/
+		private DateTime syncTime;
+		/**<summary>The initial tick count used to subtrack from the current when getting the new time.</summary>*/
+		private long syncTickCount;
+
+		/**<summary>True if the window is loaded.</summary>*/
+		bool loaded = false;
 
 		#endregion
 		//========= CONSTRUCTORS =========
@@ -70,8 +81,8 @@ namespace TerrariaMidiPlayer {
 			
 			globalHook.KeyDown += OnGlobalKeyDown;
 			
-			sequencer.ChannelMessagePlayed += OnChannelMessagePlayed;
-			sequencer.PlayingCompleted += OnPlayingCompleted;
+			Config.Sequencer.ChannelMessagePlayed += OnChannelMessagePlayed;
+			Config.Sequencer.PlayingCompleted += OnPlayingCompleted;
 
 			playbackUITimer.Elapsed += OnPlaybackUIUpdate;
 
@@ -101,6 +112,7 @@ namespace TerrariaMidiPlayer {
 			 * Touhou Midis/Initial D Midis
 			 */
 
+			this.labelMidiDrop.Visibility = Visibility.Hidden;
 
 			// Make numeric up down tab focus properly
 			FocusableProperty.OverrideMetadata(typeof(IntSpinner), new FrameworkPropertyMetadata(false));
@@ -144,15 +156,20 @@ namespace TerrariaMidiPlayer {
 			numericChecks.Value = Config.CheckFrequency;
 			checkBoxChecks.IsChecked = Config.ChecksEnabled;
 
+			checkBoxTalking.IsEnabled = Config.DisableMountWhenTalking;
 			comboBoxMount.SelectedIndex = Config.MountIndex;
 
 			projectileControl.Angle = (int)Config.ProjectileAngle;
 			projectileControl.Range = (int)Config.ProjectileRange;
 
+			menuItemTrackNames.IsChecked = Config.UseTrackNames;
+			menuItemWrapPianoMode.IsChecked = Config.WrapPianoMode;
+			menuItemSkipPianoMode.IsChecked = Config.SkipPianoMode;
+
 			#endregion
 			//--------------------------------
 			#region Keybinds
-			
+
 			UpdateKeybindTooltips();
 
 			#endregion
@@ -212,7 +229,7 @@ namespace TerrariaMidiPlayer {
 			globalHook = null;
 
 			watch.Stop();
-			sequencer.Stop();
+			Config.Sequencer.Stop();
 			playbackUITimer.Stop();
 
 			SaveConfig(true);
@@ -222,19 +239,43 @@ namespace TerrariaMidiPlayer {
 				server.Stop();
 			if (client != null)
 				client.Disconnect();
+
+			// Make sure to dispose of these
+			Config.Sequencer.Dispose();
+			Config.OutputDevice.Dispose();
+		}
+		private void OnPreviewMouseDown(object sender, MouseButtonEventArgs e) {
+			// Make text boxes lose focus on click away
+			FocusManager.SetFocusedElement(this, this);
 		}
 		private void OnGlobalKeyDown(object sender, System.Windows.Forms.KeyEventArgs e) {
 			if (!loaded || keybindReaderMidi.IsReading)
 				return;
+			bool isActive = IsActive;
+			var focus = FocusManager.GetFocusedElement(this);
+			if (focus is TextBox || focus is IntSpinner)
+				return;
+			foreach (Window window in OwnedWindows) {
+				focus = FocusManager.GetFocusedElement(window);
+				if (focus is TextBox || focus is IntSpinner)
+					return;
+				if (window.IsActive)
+					isActive = true;
+			}
+
+			if (e.KeyCode == Keys.Enter && TerrariaWindowLocator.CheckIfFocused() && Config.DisableMountWhenTalking) {
+				talking = !talking;
+				checkBoxTalking.IsChecked = talking;
+			}
 
 			if (Config.HasMidi) {
-				if (Config.Keybinds.Play.IsDown(e) && (Config.PlaybackNoFocus || IsActive || TerrariaWindowLocator.CheckIfFocused())) {
+				if (Config.Keybinds.Play.IsDown(e) && (Config.PlaybackNoFocus || isActive || TerrariaWindowLocator.CheckIfFocused())) {
 					if (server != null)
 						HostStartPlay();
 					else
 						Play();
 				}
-				else if (Config.Keybinds.Pause.IsDown(e) && (Config.PlaybackNoFocus || IsActive || TerrariaWindowLocator.CheckIfFocused())) {
+				else if (Config.Keybinds.Pause.IsDown(e) && (Config.PlaybackNoFocus || isActive || TerrariaWindowLocator.CheckIfFocused())) {
 					if (server != null)
 						HostStop();
 					else
@@ -247,12 +288,12 @@ namespace TerrariaMidiPlayer {
 						Stop();
 				}
 			}
-			if (Config.Keybinds.Mount.IsDown(e) && TerrariaWindowLocator.CheckIfFocused()) {
+			if (Config.Keybinds.Mount.IsDown(e) && TerrariaWindowLocator.CheckIfFocused() && !talking) {
 				mounted = !mounted;
 				checkBoxMounted.IsChecked = mounted;
 			}
 			for (int i = 0; i < Config.Midis.Count; i++) {
-				if (Config.Midis[i].Keybind.IsDown(e) && (Config.PlaybackNoFocus || IsActive || TerrariaWindowLocator.CheckIfFocused())) {
+				if (Config.Midis[i].Keybind.IsDown(e) && (Config.PlaybackNoFocus || isActive || TerrariaWindowLocator.CheckIfFocused())) {
 					Stop();
 
 					loaded = false;
@@ -262,7 +303,7 @@ namespace TerrariaMidiPlayer {
 					UpdateMidi();
 				}
 			}
-			if (Config.Keybinds.Close.IsDown(e) && (Config.CloseNoFocus || IsActive || TerrariaWindowLocator.CheckIfFocused())) {
+			if (Config.Keybinds.Close.IsDown(e) && (Config.CloseNoFocus || isActive || TerrariaWindowLocator.CheckIfFocused())) {
 				Close();
 			}
 		}
@@ -296,11 +337,11 @@ namespace TerrariaMidiPlayer {
 			loaded = false;
 			listTracks.Items.Clear();
 			if (Config.HasMidi) {
-				sequencer.Sequence = Config.Midi.Sequence;
-				sequencer.Speed = Config.Midi.SpeedRatio;
+				Config.Sequencer.Sequence = Config.Midi.Sequence;
+				Config.Sequencer.Speed = Config.Midi.SpeedRatio;
 
 				labelTotalNotes.Content = "Total Notes: " + Config.Midi.TotalNotes;
-				labelDuration.Content = "Duration: " + MillisecondsToString(sequencer.Duration);
+				labelDuration.Content = "Duration: " + MillisecondsToString(Config.Sequencer.Duration);
 				keybindReaderMidi.Keybind = Config.Midi.Keybind;
 				numericNoteOffset.IsEnabled = true;
 				numericSpeed.IsEnabled = true;
@@ -321,10 +362,12 @@ namespace TerrariaMidiPlayer {
 					trackIndex = -1;
 				}
 				buttonEditTrackName.IsEnabled = (trackIndex != -1);
+				buttonTrackGraph.IsEnabled = (trackIndex != -1);
 				listTracks.SelectedIndex = trackIndex;
 				listTracks.IsEnabled = (Config.Midi.TrackCount > 0);
 
-				labelDuration.Content = "Duration: " + MillisecondsToString(sequencer.Duration);
+				labelDuration.Content = "Duration: " + MillisecondsToString(Config.Sequencer.Duration);
+				tabMidiSetup.Header = (Config.Midi.IsABC ? "ABC" : "Midi") + " Setup";
 			}
 			else {
 				trackIndex = -1;
@@ -335,6 +378,8 @@ namespace TerrariaMidiPlayer {
 				listTracks.IsEnabled = false;
 				keybindReaderMidi.IsEnabled = false;
 				buttonEditTrackName.IsEnabled = false;
+				buttonTrackGraph.IsEnabled = false;
+				tabMidiSetup.Header = "Midi Setup";
 			}
 			loaded = true;
 			UpdateTrack();
@@ -346,6 +391,7 @@ namespace TerrariaMidiPlayer {
 			loaded = false;
 			if (Config.HasMidi && Config.Midi.TrackCount > 0) {
 				UpdateTrackNotes();
+				labelChords.Content = "Chords: " + Config.Midi.GetTrackAt(listTracks.SelectedIndex).Chords;
 				labelNotes.Content = "Notes: " + Config.Midi.GetTrackAt(listTracks.SelectedIndex).Notes;
 				checkBoxTrackEnabled.IsChecked = Config.Midi.GetTrackSettingsAt(listTracks.SelectedIndex).Enabled;
 				numericOctaveOffset.Value = Config.Midi.GetTrackSettingsAt(listTracks.SelectedIndex).OctaveOffset;
@@ -355,6 +401,7 @@ namespace TerrariaMidiPlayer {
 			else {
 				labelHighestNote.Content = "Highest Note: ";
 				labelLowestNote.Content = "Lowest Note: ";
+				labelChords.Content = "Chords: ";
 				labelNotes.Content = "Notes: ";
 				numericOctaveOffset.IsEnabled = false;
 				checkBoxTrackEnabled.IsEnabled = false;
@@ -376,15 +423,16 @@ namespace TerrariaMidiPlayer {
 		}
 		/**<summary>Updates enabled state of midi buttons.</summary>*/
 		private void UpdateMidiButtons() {
-			buttonRemoveMidi.IsEnabled = (listMidis.SelectedIndex != -1);
-			buttonEditMidiName.IsEnabled = (listMidis.SelectedIndex != -1);
-			buttonMoveMidiUp.IsEnabled = (listMidis.SelectedIndex > 0);
-			buttonMoveMidiDown.IsEnabled = (listMidis.SelectedIndex != -1 && listMidis.SelectedIndex + 1 < listMidis.Items.Count);
+			buttonRemoveMidi.IsEnabled = Config.HasMidi;
+			buttonEditMidiName.IsEnabled = Config.HasMidi;
+			buttonMoveMidiUp.IsEnabled = Config.HasMidi;
+			buttonMoveMidiDown.IsEnabled = (Config.HasMidi && Config.MidiIndex + 1 < Config.Midis.Count);
 
-			toggleButtonStop.IsEnabled = (listMidis.SelectedIndex != -1);
-			toggleButtonPlay.IsEnabled = (listMidis.SelectedIndex != -1);
-			toggleButtonPause.IsEnabled = (listMidis.SelectedIndex != -1);
-			sliderMidiPosition.IsEnabled = (listMidis.SelectedIndex != -1);
+			toggleButtonPiano.IsEnabled = Config.HasMidi;
+			toggleButtonStop.IsEnabled = Config.HasMidi;
+			toggleButtonPlay.IsEnabled = Config.HasMidi;
+			toggleButtonPause.IsEnabled = Config.HasMidi;
+			sliderMidiPosition.IsEnabled = Config.HasMidi;
 			loaded = false;
 			sliderMidiPosition.Value = 0;
 			loaded = true;
@@ -393,10 +441,10 @@ namespace TerrariaMidiPlayer {
 		private void UpdatePlayTime() {
 			Dispatcher.Invoke(() => {
 				loaded = false;
-				double currentProgress = sequencer.CurrentProgress;
+				double currentProgress = Config.Sequencer.CurrentProgress;
 				sliderMidiPosition.Value = (double.IsNaN(currentProgress) ? 0 : currentProgress);
-				if (Config.MidiIndex != -1)
-					labelMidiPosition.Content = MillisecondsToString(sequencer.CurrentTime) + "/" + MillisecondsToString(sequencer.Duration);
+				if (Config.HasMidi)
+					labelMidiPosition.Content = MillisecondsToString(Config.Sequencer.CurrentTime) + "/" + MillisecondsToString(Config.Sequencer.Duration);
 				else
 					labelMidiPosition.Content = "-:--/-:--";
 				loaded = true;

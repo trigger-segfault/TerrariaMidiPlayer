@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using TerrariaMidiPlayer.Util;
 using TerrariaMidiPlayer.Windows;
+using System.Timers;
 
 namespace TerrariaMidiPlayer {
 	/**<summary>The main window running Terraria Midi Player.</summary>*/
@@ -19,36 +20,51 @@ namespace TerrariaMidiPlayer {
 			Stop();
 		}
 		private void OnChannelMessagePlayed(object sender, ChannelMessageEventArgs e) {
-			if (Config.Midi.IsMessagePlayable(e) && (watch.ElapsedMilliseconds >= Config.UseTime * 1000 / 60 + 2 || firstNote)) {
-				if (Config.ChecksEnabled) {
-					checkCount++;
-					if (!TerrariaWindowLocator.Update(Config.ChecksEnabled && checkCount > Config.CheckFrequency)) {
-						Pause();
-						Dispatcher.Invoke(() => {
-							TriggerMessageBox.Show(this, MessageIcon.Error, "Failed to keep track of the Terraria Window!", "Tracking Error");
-						});
-						return;
+			if (Config.Midi.IsMessagePlayable(e) && (watch.ElapsedMilliseconds >= Config.UseTime * 1000 / 60 + 2 || firstNote || (Config.PianoMode && !Config.SkipPianoMode))) {
+				if (Config.PianoMode) {
+					int note = e.Message.Data1 - 12 * (Config.Midi.GetTrackSettingsByTrackObj(e.Track).OctaveOffset + 1) + Config.Midi.NoteOffset;
+					// Shift the note into a valid octave
+					if (Config.WrapPianoMode) {
+						if (note < 0)
+							note -= ((note - 11) / 12) * 12;
+						if (note > 24) // Remember, there's one extra C
+							note -= ((note - 14) / 12) * 12;
 					}
-					if (checkCount > Config.CheckFrequency)
-						checkCount = 0;
-					if (!TerrariaWindowLocator.HasFocus) {
-						TerrariaWindowLocator.Focus();
-						Thread.Sleep(100);
-						return;
-					}
-					if (!TerrariaWindowLocator.IsOpen) {
-						Pause();
-						Dispatcher.Invoke(() => {
-							TriggerMessageBox.Show(this, MessageIcon.Warning, "Terraria window has been closed.", "Terraria Closed");
-						});
-						return;
-					}
-					clientArea = TerrariaWindowLocator.ClientArea;
+					Config.OutputDevice.Send(new ChannelMessage(ChannelCommand.NoteOn, 0, note + 5 * 12, 100));
+					firstNote = false;
+					watch.Restart();
 				}
-				firstNote = false;
-				int note = e.Message.Data1 - 12 * (Config.Midi.GetTrackSettingsByTrackObj(e.Track).OctaveOffset + 1) + Config.Midi.NoteOffset;
-				watch.Restart();
-				PlayNote(note);
+				else {
+					if (Config.ChecksEnabled) {
+						checkCount++;
+						if (!TerrariaWindowLocator.Update(Config.ChecksEnabled && checkCount > Config.CheckFrequency)) {
+							Pause();
+							Dispatcher.Invoke(() => {
+								TriggerMessageBox.Show(this, MessageIcon.Error, "Failed to keep track of the Terraria Window!", "Tracking Error");
+							});
+							return;
+						}
+						if (checkCount > Config.CheckFrequency)
+							checkCount = 0;
+						if (!TerrariaWindowLocator.HasFocus) {
+							TerrariaWindowLocator.Focus();
+							Thread.Sleep(100);
+							return;
+						}
+						if (!TerrariaWindowLocator.IsOpen) {
+							Pause();
+							Dispatcher.Invoke(() => {
+								TriggerMessageBox.Show(this, MessageIcon.Warning, "Terraria window has been closed.", "Terraria Closed");
+							});
+							return;
+						}
+						clientArea = TerrariaWindowLocator.ClientArea;
+					}
+					firstNote = false;
+					int note = e.Message.Data1 - 12 * (Config.Midi.GetTrackSettingsByTrackObj(e.Track).OctaveOffset + 1) + Config.Midi.NoteOffset;
+					watch.Restart();
+					PlayNote(note);
+				}
 			}
 		}
 
@@ -57,25 +73,16 @@ namespace TerrariaMidiPlayer {
 		#region Play
 
 		/**<summary>Starts or continues the song.</summary>*/
-		private void Play() {
+		public void Play() {
 			if (Config.HasMidi) {
 				firstNote = true;
-				TerrariaWindowLocator.Update(true);
-				if (!TerrariaWindowLocator.HasFocus) {
-					TerrariaWindowLocator.Focus();
-					Thread.Sleep(400);
-				}
-				if (TerrariaWindowLocator.IsOpen) {
-					clientArea = TerrariaWindowLocator.ClientArea;
-					noteWatch.Restart();
-
+				if (Config.PianoMode) {
 					// When the sequencer finishes it leaves its position at 1
-					if (sequencer.Position <= 1)
-						sequencer.Start();
+					if (Config.Sequencer.Position <= 1)
+						Config.Sequencer.Start();
 					else
-						sequencer.Continue();
+						Config.Sequencer.Continue();
 
-					checkCount = 0;
 					Dispatcher.Invoke(() => {
 						toggleButtonStop.IsChecked = false;
 						toggleButtonPlay.IsChecked = true;
@@ -84,17 +91,41 @@ namespace TerrariaMidiPlayer {
 					});
 				}
 				else {
-					Dispatcher.Invoke(() => {
-						toggleButtonPlay.IsChecked = false;
-						TriggerMessageBox.Show(this, MessageIcon.Warning, "You cannot play a midi when Terraria isn't running! Have you specified the correct executable name in Options?", "Terraria not Running");
-					});
+					TerrariaWindowLocator.Update(true);
+					if (!TerrariaWindowLocator.HasFocus) {
+						TerrariaWindowLocator.Focus();
+						Thread.Sleep(400);
+					}
+					if (TerrariaWindowLocator.IsOpen) {
+						clientArea = TerrariaWindowLocator.ClientArea;
+
+						// When the sequencer finishes it leaves its position at 1
+						if (Config.Sequencer.Position <= 1)
+							Config.Sequencer.Start();
+						else
+							Config.Sequencer.Continue();
+
+						checkCount = 0;
+						Dispatcher.Invoke(() => {
+							toggleButtonStop.IsChecked = false;
+							toggleButtonPlay.IsChecked = true;
+							toggleButtonPause.IsChecked = false;
+							playbackUITimer.Start();
+						});
+					}
+					else {
+						Dispatcher.Invoke(() => {
+							toggleButtonPlay.IsChecked = false;
+							TriggerMessageBox.Show(this, MessageIcon.Warning, "You cannot play a midi when Terraria isn't running! Have you specified the correct executable name in Options?", "Terraria not Running");
+						});
+					}
 				}
 			}
 		}
 		/**<summary>Pause the song.</summary>*/
-		private void Pause() {
-			noteWatch.Stop();
-			sequencer.Stop();
+		public void Pause() {
+			Config.OutputDevice.Reset();
+			Config.Sequencer.Stop();
 			if (Config.HasMidi) {
 				Dispatcher.Invoke(() => {
 					toggleButtonStop.IsChecked = false;
@@ -106,10 +137,10 @@ namespace TerrariaMidiPlayer {
 			}
 		}
 		/**<summary>Stop the song.</summary>*/
-		private void Stop() {
-			noteWatch.Stop();
-			sequencer.Stop();
-			sequencer.Position = 0;
+		public void Stop() {
+			Config.OutputDevice.Reset();
+			Config.Sequencer.Stop();
+			Config.Sequencer.Position = 0;
 			if (Config.HasMidi) {
 				Dispatcher.Invoke(() => {
 					toggleButtonStop.IsChecked = true;
@@ -137,7 +168,7 @@ namespace TerrariaMidiPlayer {
 			// Calculate the distance per semitone
 			double heightRatio = clientArea.Height / 48.0;
 
-			// Shift the note info a valid octave
+			// Shift the note into a valid octave
 			if (semitone < 0)
 				semitone -= ((semitone - 11) / 12) * 12;
 			if (semitone > 24) // Remember, there's one extra C

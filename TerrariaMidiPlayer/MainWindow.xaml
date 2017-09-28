@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:TerrariaMidiPlayer.Controls"
         xmlns:System="clr-namespace:System;assembly=mscorlib" x:Class="TerrariaMidiPlayer.MainWindow"
         mc:Ignorable="d"
-        Title="Terraria Midi Player" Height="383" Width="540" Closing="OnClosing" Icon="App.ico" ResizeMode="CanMinimize" SnapsToDevicePixels="True" UseLayoutRounding="True" Loaded="OnWindowLoaded" Background="#FFCFCCC8">
+        Title="Terraria Midi Player" Closing="OnClosing" Icon="App.ico" ResizeMode="CanMinimize" SnapsToDevicePixels="True" UseLayoutRounding="True" Loaded="OnWindowLoaded" Background="#FFCFCCC8" SizeToContent="WidthAndHeight" PreviewMouseDown="OnPreviewMouseDown">
     <Window.Resources>
         <Style TargetType="{x:Type ListBox}">
             <Style.Resources>
@@ -22,8 +22,7 @@
             </Style.Triggers>
         </Style>
     </Window.Resources>
-    <Grid>
-
+    <DockPanel LastChildFill="True" Width="524" Height="345">
         <Menu DockPanel.Dock="Top" x:Name="menu" BorderThickness="0,0,0,1" BorderBrush="#FF919395" VerticalAlignment="Top">
             <Menu.Background>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
@@ -50,9 +49,24 @@
                         <Image Source="Resources/Icons/Keybinds.png" />
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Executable Name..." Click="OnExecutableName">
+                <MenuItem Header="Executable Names..." Click="OnExecutableName">
                     <MenuItem.Icon>
                         <Image Source="Resources/Icons/TerrariaIcon.png" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem x:Name="menuItemTrackNames" Header="Use Midi Track Names" Click="OnUseTrackNames" IsCheckable="True">
+                    <MenuItem.Icon>
+                        <Image Source="Resources/Icons/TrackNames.png" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem x:Name="menuItemWrapPianoMode" Header="Wrap in Piano Mode" Click="OnPianoModeWrap" IsCheckable="True">
+                    <MenuItem.Icon>
+                        <Image Source="Resources/Icons/PianoWrap.png" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem x:Name="menuItemSkipPianoMode" Header="Skip in Piano Mode" Click="OnPianoModeSkip" IsCheckable="True">
+                    <MenuItem.Icon>
+                        <Image Source="Resources/Icons/PianoSkip.png" />
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator Margin="0"/>
@@ -92,31 +106,31 @@
                 </MenuItem>
             </MenuItem>
         </Menu>
-        <Rectangle Fill="#FFEEEEEE" HorizontalAlignment="Left" Margin="0,22,0,0" Width="192" StrokeThickness="0"/>
-        <Border BorderBrush="#FF886DB0" BorderThickness="0,0,1,0" HorizontalAlignment="Left" Margin="0,22,0,0" Width="192" Background="#FFEEEEEE">
+        <Border  DockPanel.Dock="Left" BorderBrush="#FF886DB0" BorderThickness="0,0,1,0" HorizontalAlignment="Left" Width="192" Background="#FFEEEEEE">
             <Grid Margin="0">
                 <Label Content="Midis" HorizontalAlignment="Left" Margin="10,5,0,0" VerticalAlignment="Top"/>
-                <ListBox x:Name="listMidis" Margin="10,31,10,10" SelectionChanged="OnMidiChanged"/>
-                <StackPanel Height="20" Margin="0,8,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" RenderTransformOrigin="0.5,0.5" Width="122" Orientation="Horizontal" FlowDirection="RightToLeft">
-                    <Button x:Name="buttonMoveMidiDown" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" Width="20" ToolTip="Move Midi Down" Focusable="False" IsTabStop="False" Height="20" Padding="0" Click="OnMoveMidiDown">
-                        <Image Source="Resources/Icons/MoveDown.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}" />
+                <ListBox x:Name="listMidis" Margin="10,31,10,10" SelectionChanged="OnMidiChanged" AllowDrop="True" DragEnter="OnMidiListDragEnter" DragLeave="OnMidiListDragLeave" DragOver="OnMidiListDragOver" Drop="OnMidiListDrop"/>
+                <Label x:Name="labelMidiDrop" Content="Drop Playable Files" Margin="10,31,10,10" Background="#CCF9F9F9" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="18" IsHitTestVisible="False" Visibility="Hidden" />
+                <StackPanel Height="20" Margin="0,8,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" RenderTransformOrigin="0.5,0.5" Orientation="Horizontal">
+                    <Button HorizontalAlignment="Left" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" VerticalAlignment="Top" Width="20" ToolTip="Add Midi" Focusable="False" IsTabStop="False" Height="20" Click="OnAddMidi" Padding="0" Margin="0,0,2,0">
+                        <Image Source="Resources/Icons/MidiAdd.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}" />
                     </Button>
-                    <Button x:Name="buttonMoveMidiUp" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" ToolTip="Move Midi Up" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="2,0,0,0" Click="OnMoveMidiUp">
-                        <Image Source="Resources/Icons/MoveUp.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
-                    </Button>
-                    <Button x:Name="buttonEditMidiName" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" ToolTip="Edit Midi Name" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="2,0,0,0" Click="OnEditMidiName">
-                        <Image Source="Resources/Icons/EditName.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
-                    </Button>
-                    <Button x:Name="buttonRemoveMidi" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" ToolTip="Remove Midi" Focusable="False" IsTabStop="False" Height="20" Click="OnRemoveMidi" Padding="0" Margin="2,0,0,0">
+                    <Button x:Name="buttonRemoveMidi" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" ToolTip="Remove Midi" Focusable="False" IsTabStop="False" Height="20" Click="OnRemoveMidi" Padding="0" Margin="0,0,2,0">
                         <Image Source="Resources/Icons/MidiRemove.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}" />
                     </Button>
-                    <Button HorizontalAlignment="Left" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" VerticalAlignment="Top" Width="20" ToolTip="Add Midi" Focusable="False" IsTabStop="False" Height="20" Click="OnAddMidi" Padding="0" Margin="2,0,0,0">
-                        <Image Source="Resources/Icons/MidiAdd.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}" />
+                    <Button x:Name="buttonEditMidiName" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" ToolTip="Edit Midi Name" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="0,0,2,0" Click="OnEditMidiName">
+                        <Image Source="Resources/Icons/EditName.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
+                    </Button>
+                    <Button x:Name="buttonMoveMidiUp" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" ToolTip="Move Midi Up" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="0,0,2,0" Click="OnMoveMidiUp">
+                        <Image Source="Resources/Icons/MoveUp.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
+                    </Button>
+                    <Button x:Name="buttonMoveMidiDown" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" Width="20" ToolTip="Move Midi Down" Focusable="False" IsTabStop="False" Height="20" Padding="0" Click="OnMoveMidiDown">
+                        <Image Source="Resources/Icons/MoveDown.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}" />
                     </Button>
                 </StackPanel>
             </Grid>
         </Border>
-        <TabControl x:Name="tabControl" Margin="197,27,5,5" UseLayoutRounding="True">
+        <TabControl x:Name="tabControl" Margin="5,5,5,5" UseLayoutRounding="True">
             <TabItem Header="Playback" IsTabStop="False">
                 <Grid Background="#FFF9F9F9">
 
@@ -133,6 +147,7 @@
 
                             <Label Content="Mount" HorizontalAlignment="Left" Margin="10,98,0,0" VerticalAlignment="Top" ToolTip="Needed to calculate the center of the player." Visibility="Hidden"/>
                             <CheckBox x:Name="checkBoxMounted" Content="Mounted" HorizontalAlignment="Left" Margin="8,104,0,0" VerticalAlignment="Top" Click="OnMountedChanged" Padding="4,-1,5,0" ToolTip="Needed to calculate the center of the player."/>
+                            <CheckBox x:Name="checkBoxTalking" Content="Talk" HorizontalAlignment="Left" Margin="86,104,0,0" VerticalAlignment="Top" Click="OnTalkingChanged" Padding="4,-1,5,0" ToolTip="The mount keybind will not be toggled when talking."/>
                             <ComboBox x:Name="comboBoxMount" HorizontalAlignment="Left" Margin="10,125,0,0" VerticalAlignment="Top" Width="121" SelectionChanged="OnMountChanged"/>
                         </Grid>
                     </GroupBox>
@@ -142,11 +157,15 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="1.2*"/>
                                 </Grid.ColumnDefinitions>
                                 <Separator Height="20" VerticalAlignment="Top" Margin="10,0,0,0" />
                                 <StackPanel Height="20" HorizontalAlignment="Left" VerticalAlignment="Top" Orientation="Horizontal" Margin="0" Grid.Column="1">
-                                    <ToggleButton x:Name="toggleButtonStop" Style="{StaticResource {x:Static ToolBar.ToggleButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="6,0,0,0" Click="OnStopToggled" IsChecked="True" ToolTip="Stop midi playback">
+                                    <ToggleButton x:Name="toggleButtonPiano" Style="{StaticResource {x:Static ToolBar.ToggleButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="6,0,2,0" Click="OnPianoToggled" ToolTip="Piano Mode: Play midi in program instead of Terraria">
+                                        <Image Source="Resources/Icons/Piano.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
+                                    </ToggleButton>
+                                    <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"/>
+                                    <ToggleButton x:Name="toggleButtonStop" Style="{StaticResource {x:Static ToolBar.ToggleButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="2,0,0,0" Click="OnStopToggled" IsChecked="True" ToolTip="Stop midi playback">
                                         <Image Source="Resources/Icons/Stop.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
                                     </ToggleButton>
                                     <ToggleButton x:Name="toggleButtonPlay" Style="{StaticResource {x:Static ToolBar.ToggleButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="2,0,0,0" Click="OnPlayToggled" ToolTip="Start midi playback">
@@ -165,31 +184,35 @@
                     </GroupBox>
                 </Grid>
             </TabItem>
-            <TabItem Header="Midi Setup" IsTabStop="False">
+            <TabItem x:Name="tabMidiSetup" Header="Midi Setup" IsTabStop="False">
                 <Grid Background="#FFF9F9F9">
                     <Label Content="Tracks" HorizontalAlignment="Left" Margin="10,5,0,0" VerticalAlignment="Top"/>
-                    <ListBox x:Name="listTracks" Margin="10,32,0,0" SelectionChanged="OnTrackChanged" HorizontalAlignment="Left" VerticalAlignment="Top" Height="120" Width="100"/>
-                    <Label x:Name="labelHighestNote" Content="Highest Note:" HorizontalAlignment="Left" Margin="115,32,0,0" VerticalAlignment="Top"/>
-                    <Label x:Name="labelLowestNote" Content="Lowest Note:" HorizontalAlignment="Left" Margin="115,58,0,0" VerticalAlignment="Top"/>
-                    <Label x:Name="labelNotes" Content="Notes:" HorizontalAlignment="Left" Margin="115,84,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="checkBoxTrackEnabled" Content="Enabled" HorizontalAlignment="Right" Margin="0,107,14,0" VerticalAlignment="Top" Click="OnTrackEnabledClicked" IsChecked="True" Padding="4,-1,5,0" RenderTransformOrigin="0.516,5.667"/>
-                    <Label Content="Octave Offset" HorizontalAlignment="Right" Margin="0,128,81,0" VerticalAlignment="Top"/>
-                    <local:IntSpinner x:Name="numericOctaveOffset" Margin="0,130,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="10" Value="0" ValueChanged="OnOctaveOffsetChanged" Minimum="-10"/>
+                    <ListBox x:Name="listTracks" Margin="10,32,0,0" SelectionChanged="OnTrackChanged" HorizontalAlignment="Left" VerticalAlignment="Top" Height="132" Width="120" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                    <Label x:Name="labelHighestNote" Content="Highest Note:" HorizontalAlignment="Left" Margin="135,32,0,0" VerticalAlignment="Top"/>
+                    <Label x:Name="labelLowestNote" Content="Lowest Note:" HorizontalAlignment="Left" Margin="135,57,0,0" VerticalAlignment="Top"/>
+                    <Label x:Name="labelChords" Content="Chords:" HorizontalAlignment="Left" Margin="135,83,0,0" VerticalAlignment="Top"/>
+                    <Label x:Name="labelNotes" Content="Notes:" HorizontalAlignment="Left" Margin="135,109,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="checkBoxTrackEnabled" Content="Enabled" HorizontalAlignment="Right" Margin="0,119,12,0" VerticalAlignment="Top" Click="OnTrackEnabledClicked" IsChecked="True" Padding="4,-1,5,0" RenderTransformOrigin="0.516,5.667"/>
+                    <Label Content="Octave Offset" HorizontalAlignment="Right" Margin="0,140,81,0" VerticalAlignment="Top"/>
+                    <local:IntSpinner x:Name="numericOctaveOffset" Margin="0,142,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="8" Value="0" ValueChanged="OnOctaveOffsetChanged" Minimum="-1"/>
 
-                    <Separator Height="7" Margin="10,157,10,0" VerticalAlignment="Top"/>
+                    <Separator Height="7" Margin="10,169,10,0" VerticalAlignment="Top"/>
 
-                    <Label x:Name="labelTotalNotes" Content="Total Notes:" HorizontalAlignment="Left" Margin="10,168,0,0" VerticalAlignment="Top"/>
-                    <Label x:Name="labelDuration" Content="Duration:" HorizontalAlignment="Left" Margin="10,198,0,0" VerticalAlignment="Top"/>
+                    <Label x:Name="labelTotalNotes" Content="Total Notes:" HorizontalAlignment="Left" Margin="10,180,0,0" VerticalAlignment="Top"/>
+                    <Label x:Name="labelDuration" Content="Duration:" HorizontalAlignment="Left" Margin="10,210,0,0" VerticalAlignment="Top"/>
 
-                    <Label Content="Note Offset" HorizontalAlignment="Right" Margin="0,168,81,0" VerticalAlignment="Top"/>
-                    <local:IntSpinner x:Name="numericNoteOffset" Margin="0,170,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="11" Value="0" ValueChanged="OnNoteOffsetChanged" Minimum="-11"/>
-                    <Label Content="Speed (%)" HorizontalAlignment="Right" Margin="0,198,81,0" VerticalAlignment="Top"/>
-                    <local:IntSpinner x:Name="numericSpeed" Margin="0,200,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="10000" Value="100" ValueChanged="OnSpeedChanged" Minimum="1"/>
+                    <Label Content="Note Offset" HorizontalAlignment="Right" Margin="0,180,81,0" VerticalAlignment="Top"/>
+                    <local:IntSpinner x:Name="numericNoteOffset" Margin="0,182,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="11" Value="0" ValueChanged="OnNoteOffsetChanged" Minimum="-11"/>
+                    <Label Content="Speed (%)" HorizontalAlignment="Right" Margin="0,210,81,0" VerticalAlignment="Top"/>
+                    <local:IntSpinner x:Name="numericSpeed" Margin="0,212,10,0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="66" Increment="1" Maximum="10000" Value="100" ValueChanged="OnSpeedChanged" Minimum="1"/>
 
-                    <Label Content="Keybind" HorizontalAlignment="Right" Margin="0,229,195,0" VerticalAlignment="Top"/>
-                    <local:KeybindReader x:Name="keybindReaderMidi" Margin="0,231,10,0" HorizontalAlignment="Right" KeybindChanged="OnMidiKeybindChanged"/>
-                    <Button x:Name="buttonEditTrackName" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" ToolTip="Edit Midi Name" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="89,9,0,0" Click="OnEditTrackName">
-                        <Image Source="Resources/Icons/EditNameUnflipped.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
+                    <Label Content="Keybind" HorizontalAlignment="Right" Margin="0,241,195,0" VerticalAlignment="Top"/>
+                    <local:KeybindReader x:Name="keybindReaderMidi" Margin="0,243,10,0" HorizontalAlignment="Right" KeybindChanged="OnMidiKeybindChanged"/>
+                    <Button x:Name="buttonEditTrackName" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" ToolTip="Edit Track Name" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="110,9,0,0" Click="OnEditTrackName">
+                        <Image Source="Resources/Icons/EditName.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
+                    </Button>
+                    <Button x:Name="buttonTrackGraph" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" ToolTip="View Track Graph" Focusable="False" IsTabStop="False" Height="20" Padding="0" Margin="86,9,0,0" Click="OnTrackGraph">
+                        <Image Source="Resources/Icons/Graph.png" Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource FlatButtonImageDisablable}"/>
                     </Button>
                 </Grid>
             </TabItem>
@@ -243,5 +266,5 @@
             </TabItem>
         </TabControl>
 
-    </Grid>
+    </DockPanel>
 </Window>

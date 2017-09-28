@@ -3,12 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:TerrariaMidiPlayer.Controls"
-        mc:Ignorable="d"
-        Title="Edit Name" Height="132" Width="300" Background="#FFF9F9F9" Icon="/TerrariaMidiPlayer;component/Resources/Icons/EditNameUnflipped.png" PreviewKeyDown="OnPreviewKeyDown" WindowStartupLocation="CenterOwner">
-    <Grid>
+        Title="Edit Name" Background="#FFF9F9F9" Icon="/Resources/Icons/EditName.png" WindowStartupLocation="CenterOwner" SizeToContent="WidthAndHeight">
+    <Grid Height="100" Width="300">
         <TextBox x:Name="textBox" Height="23" Margin="20,25,20,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
-        <Button Content="Cancel" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" IsCancel="True"/>
         <Button Content="OK" HorizontalAlignment="Right" Margin="0,0,95,10" VerticalAlignment="Bottom" Width="75" IsDefault="True" Click="OnOKClicked"/>
+        <Button Content="Cancel" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" IsCancel="True"/>
     </Grid>
 </Window>

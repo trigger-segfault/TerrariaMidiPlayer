@@ -33,6 +33,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Sanford.Multimedia.Midi
@@ -537,6 +538,25 @@ namespace Sanford.Multimedia.Midi
         #endregion
 
         #region Properties
+
+		public string Name {
+			get {
+				IEnumerator<MidiEvent> midiEnumerator = Iterator().GetEnumerator();
+				while (midiEnumerator.MoveNext()) {
+					MidiEvent e = midiEnumerator.Current;
+					if (e.AbsoluteTicks != 0)
+						break;
+					if (e.MidiMessage.MessageType == MessageType.Meta) {
+						MetaMessage meta = (MetaMessage)e.MidiMessage;
+						if (meta.MetaType == MetaType.TrackName) {
+							MetaTextBuilder builder = new MetaTextBuilder(meta);
+							return builder.Text;
+						}
+					}
+				}
+				return "";
+			}
+		}
 
         /// <summary>
         /// Gets the number of MidiEvents in the Track.

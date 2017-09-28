@@ -714,7 +714,7 @@ namespace Sanford.Multimedia.Midi
             get
             {
                 return UnpackData1(msg);
-            }                
+            }	         
         }
         
         /// <summary>

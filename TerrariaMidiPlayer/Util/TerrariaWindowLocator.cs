@@ -45,8 +45,14 @@ namespace TerrariaMidiPlayer.Util {
 		/**<summary>Updates the info on the Terraria window.</summary>*/
 		public static bool Update(bool fullUpdate) {
 			try {
-				if (fullUpdate)
-					process = Process.GetProcessesByName(Config.ExecutableName).FirstOrDefault();
+				if (fullUpdate) {
+					process = null;
+					string[] exeNames = Config.ExecutableNames.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+					for (int i = 0; i < exeNames.Length && process == null; i++) {
+						if (!string.IsNullOrWhiteSpace(exeNames[i]))
+							process = Process.GetProcessesByName(exeNames[i]).FirstOrDefault();
+					}
+				}
 				if (process != null) {
 					clientArea = CppImports.GetClientArea(process.MainWindowHandle);
 					focus = CppImports.WindowHasFocus(process.MainWindowHandle);

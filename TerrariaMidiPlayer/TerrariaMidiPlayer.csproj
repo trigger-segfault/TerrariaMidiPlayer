@@ -73,6 +73,15 @@
     <Compile Include="Controls\ProjectileControl.xaml.cs">
       <DependentUpon>ProjectileControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ABC\ABCHeader.cs" />
+    <Compile Include="ABC\ABCInfo.cs" />
+    <Compile Include="ABC\ABCNote.cs" />
+    <Compile Include="ABC\ABCConverter.cs" />
+    <Compile Include="ABC\AccidentalPropagation.cs" />
+    <Compile Include="ABC\Keys.cs" />
+    <Compile Include="ABC\Note.cs" />
+    <Compile Include="ABC\Tune.cs" />
+    <Compile Include="Controls\TrackGraph.cs" />
     <Compile Include="Util\CppImports.cs" />
     <Compile Include="Util\Keybind.cs" />
     <Compile Include="Windows\AboutWindow.xaml.cs">
@@ -106,6 +115,9 @@
     <Compile Include="Syncing\Server.cs" />
     <Compile Include="Syncing\ServerConnection.cs" />
     <Compile Include="Util\TerrariaWindowLocator.cs" />
+    <Compile Include="Windows\TrackGraphWindow.xaml.cs">
+      <DependentUpon>TrackGraphWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Windows\TriggerMessageBox.xaml.cs">
       <DependentUpon>TriggerMessageBox.xaml</DependentUpon>
     </Compile>
@@ -185,6 +197,10 @@
     <Page Include="Controls\IntSpinner.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Windows\TrackGraphWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Windows\TriggerMessageBox.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -301,9 +317,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Resources\Icons\EditNameUnflipped.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Resources\Logo112.png" />
   </ItemGroup>
   <ItemGroup>
@@ -318,6 +331,21 @@
   <ItemGroup>
     <Resource Include="Resources\Icons\SaveConfig.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Icons\TrackNames.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Icons\Graph.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Icons\Piano.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Icons\PianoWrap.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Icons\PianoSkip.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
@@ -326,4 +354,20 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <!-- https://gist.github.com/thoemmi/3724333 -->
+  <Target Name="EmbedReferencedAssemblies" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <!-- get list of assemblies to copy -->
+      <AssembliesToEmbed Include="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)%(Extension)' == 'Gma.System.MouseKeyHook.dll'" />
+      <AssembliesToEmbed Include="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)%(Extension)' == 'Sanford.Multimedia.Midi.dll'" />
+      <AssembliesToEmbed Include="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)%(Extension)' == 'Xceed.Wpf.Toolkit.dll'" />
+      <!-- add these assemblies to the list of embedded resources -->
+      <EmbeddedResource Include="@(AssembliesToEmbed)">
+        <LogicalName>%(Filename)%(Extension)</LogicalName>
+      </EmbeddedResource>
+      <!-- no need to copy the assmblies locally anymore -->
+      <ReferenceCopyLocalPaths Remove="@(AssembliesToEmbed)" />
+    </ItemGroup>
+    <Message Importance="high" Text="Embedding: @(AssembliesToEmbed->'%(Filename)%(Extension)', ', ')" />
+  </Target>
 </Project>

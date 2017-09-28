@@ -130,9 +130,6 @@
   <data name="EditName" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Icons\EditName.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="EditNameUnflipped" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Icons\EditNameUnflipped.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="Empty" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Icons\Empty.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -144,6 +141,9 @@
   </data>
   <data name="Github" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Icons\Github.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Graph" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Icons\Graph.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="HarpIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Icons\HarpIcon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -184,6 +184,15 @@
   <data name="Pause" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Icons\Pause.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="Piano" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Icons\Piano.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="PianoSkip" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Icons\PianoSkip.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="PianoWrap" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Icons\PianoWrap.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="Play" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Icons\Play.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -201,6 +210,9 @@
   </data>
   <data name="TerrariaIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Icons\TerrariaIcon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="TrackNames" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Icons\TrackNames.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="WarningIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Icons\WarningIcon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>

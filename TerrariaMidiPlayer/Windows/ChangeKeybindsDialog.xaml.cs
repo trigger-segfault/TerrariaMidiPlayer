@@ -30,6 +30,7 @@ namespace TerrariaMidiPlayer.Windows {
 			keybindReaderMount.Keybind = Config.Keybinds.Mount;
 			checkBoxClose.IsChecked = Config.CloseNoFocus;
 			checkBoxPlayback.IsChecked = Config.PlaybackNoFocus;
+			checkBoxDisableMount.IsChecked = Config.DisableMountWhenTalking;
 		}
 
 		#endregion
@@ -95,6 +96,7 @@ namespace TerrariaMidiPlayer.Windows {
 				Config.Keybinds.Mount = window.keybindReaderMount.Keybind;
 				Config.CloseNoFocus = window.checkBoxClose.IsChecked.Value;
 				Config.PlaybackNoFocus = window.checkBoxPlayback.IsChecked.Value;
+				Config.DisableMountWhenTalking = window.checkBoxDisableMount.IsChecked.Value;
 				return true;
 			}
 			return false;

@@ -97,9 +97,9 @@ namespace Sanford.Multimedia.Midi
                         Write((SysRealtimeMessage)e.MidiMessage);
                         break;
 				
-		    case MessageType.Short:
-			Write((ShortMessage)e.MidiMessage);
-			break;
+					case MessageType.Short:
+						Write((ShortMessage)e.MidiMessage);
+						break;
                 }
             }
 

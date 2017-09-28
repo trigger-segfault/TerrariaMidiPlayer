@@ -103,16 +103,6 @@ namespace TerrariaMidiPlayer.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap EditNameUnflipped {
-            get {
-                object obj = ResourceManager.GetObject("EditNameUnflipped", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
         internal static System.Drawing.Bitmap Empty {
             get {
                 object obj = ResourceManager.GetObject("Empty", resourceCulture);
@@ -146,6 +136,16 @@ namespace TerrariaMidiPlayer.Properties {
         internal static System.Drawing.Bitmap Github {
             get {
                 object obj = ResourceManager.GetObject("Github", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Graph {
+            get {
+                object obj = ResourceManager.GetObject("Graph", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -283,6 +283,36 @@ namespace TerrariaMidiPlayer.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Piano {
+            get {
+                object obj = ResourceManager.GetObject("Piano", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap PianoSkip {
+            get {
+                object obj = ResourceManager.GetObject("PianoSkip", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap PianoWrap {
+            get {
+                object obj = ResourceManager.GetObject("PianoWrap", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap Play {
             get {
                 object obj = ResourceManager.GetObject("Play", resourceCulture);
@@ -336,6 +366,16 @@ namespace TerrariaMidiPlayer.Properties {
         internal static System.Drawing.Bitmap TerrariaIcon {
             get {
                 object obj = ResourceManager.GetObject("TerrariaIcon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap TrackNames {
+            get {
+                object obj = ResourceManager.GetObject("TrackNames", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

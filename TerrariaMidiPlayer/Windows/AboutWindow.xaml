@@ -2,11 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:TerrariaMidiPlayer.Controls"
-        mc:Ignorable="d"
-        Title="About Terraria Midi Player" Height="320" Width="400" Background="#FFECEEF1" WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False" Icon="/TerrariaMidiPlayer;component/Resources/Icons/About.png">
-    <Grid>
+        Title="About Terraria Midi Player" Background="#FFF0F0F0" WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False" Icon="/Resources/Icons/About.png" SnapsToDevicePixels="True" UseLayoutRounding="True" SizeToContent="WidthAndHeight" Loaded="OnWindowLoaded">
+
+    <Grid x:Name="clientArea" Width="384" Height="270">
         <Rectangle Fill="#FFC8A5DC" HorizontalAlignment="Left" Height="103" Margin="-71,-16,0,0" VerticalAlignment="Top" Width="211" RenderTransformOrigin="0.5,0.5">
             <Rectangle.RenderTransform>
                 <TransformGroup>
@@ -32,9 +30,9 @@
             </Grid>
         </GroupBox>
         <GroupBox Header="Description" Margin="10,143,10,40" BorderBrush="#FFA9B1B6">
-            <TextBlock TextWrapping="WrapWithOverflow" Text="A tool for playing midis through Terraria's musical intruments by taking control of the mouse. A syncing service is also provided in order to perform with multiple people." Margin="4" Padding="4"/>
+            <TextBlock x:Name="textBlockDescription" TextWrapping="WrapWithOverflow" Text="A tool for playing midis through Terraria's musical intruments by taking control of the mouse. A syncing service is also provided in order to perform with multiple people." Margin="4" Padding="4" VerticalAlignment="Top"/>
         </GroupBox>
-        <Button Content="Close" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="80" IsDefault="True" Click="OnCloseClicked"/>
-
+        
+        <Button Content="Close" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="80" IsDefault="True" IsCancel="True" />
     </Grid>
 </Window>

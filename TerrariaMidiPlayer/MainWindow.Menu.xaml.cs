@@ -29,11 +29,26 @@ namespace TerrariaMidiPlayer {
 			ChangeKeybindsDialog.ShowDialog(this);
 			loaded = true;
 			UpdateKeybindTooltips();
+			if (!Config.DisableMountWhenTalking) {
+				talking = false;
+				checkBoxTalking.IsChecked = false;
+			}
+			checkBoxTalking.IsEnabled = Config.DisableMountWhenTalking;
 		}
 		private void OnExecutableName(object sender, RoutedEventArgs e) {
 			loaded = false;
 			ExecutableNameDialog.ShowDialog(this);
 			loaded = true;
+		}
+		private void OnUseTrackNames(object sender, RoutedEventArgs e) {
+			Config.UseTrackNames = menuItemTrackNames.IsChecked;
+			UpdateMidi();
+		}
+		private void OnPianoModeWrap(object sender, RoutedEventArgs e) {
+			Config.WrapPianoMode = menuItemWrapPianoMode.IsChecked;
+		}
+		private void OnPianoModeSkip(object sender, RoutedEventArgs e) {
+			Config.SkipPianoMode = menuItemSkipPianoMode.IsChecked;
 		}
 		private void OnSaveConfig(object sender, RoutedEventArgs e) {
 			SaveConfig(false);

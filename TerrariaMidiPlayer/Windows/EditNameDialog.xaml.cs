@@ -30,12 +30,7 @@ namespace TerrariaMidiPlayer.Windows {
 		#endregion
 		//============ EVENTS ============
 		#region Events
-
-		private void OnPreviewKeyDown(object sender, KeyEventArgs e) {
-			if (e.Key == Key.Return) {
-				DialogResult = true;
-			}
-		}
+			
 		private void OnOKClicked(object sender, RoutedEventArgs e) {
 			DialogResult = true;
 		}

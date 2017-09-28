@@ -47,7 +47,7 @@ namespace TerrariaMidiPlayer {
 
 			listTracks.Items.RemoveAt(trackIndex);
 			ListBoxItem item = new ListBoxItem();
-			item.Content = "Track " + (Config.MidiIndex + 1);
+			item.Content = Config.Midi.GetTrackSettingsAt(trackIndex).ProperName;
 			if (!Config.Midi.GetTrackSettingsAt(trackIndex).Enabled)
 				item.Foreground = Brushes.Gray;
 			listTracks.Items.Insert(trackIndex, item);
@@ -55,12 +55,23 @@ namespace TerrariaMidiPlayer {
 
 			loaded = true;
 		}
-
 		private void OnOctaveOffsetChanged(object sender, ValueChangedEventArgs<int> e) {
 			if (!loaded)
 				return;
 			Config.Midi.GetTrackSettingsAt(trackIndex).OctaveOffset = numericOctaveOffset.Value;
 			UpdateTrackNotes();
+		}
+		private void OnTrackGraph(object sender, RoutedEventArgs e) {
+			Pause();
+			//loaded = false;
+			TrackGraphWindow.Show(this, Config.Midi, trackIndex);
+			//loaded = true;
+			UpdateTrack();
+			numericNoteOffset.Value = Config.Midi.NoteOffset;
+			numericSpeed.Value = Config.Midi.Speed;
+			OnPlaybackUIUpdate(null, null);
+			menuItemWrapPianoMode.IsChecked = Config.WrapPianoMode;
+			menuItemSkipPianoMode.IsChecked = Config.SkipPianoMode;
 		}
 
 		#endregion
@@ -77,8 +88,8 @@ namespace TerrariaMidiPlayer {
 			if (!loaded)
 				return;
 			Config.Midi.Speed = numericSpeed.Value;
-			sequencer.Speed = Config.Midi.SpeedRatio;
-			labelDuration.Content = "Duration: " + MillisecondsToString(sequencer.Duration);
+			Config.Sequencer.Speed = Config.Midi.SpeedRatio;
+			labelDuration.Content = "Duration: " + MillisecondsToString(Config.Sequencer.Duration);
 			UpdatePlayTime();
 		}
 		public void OnMidiKeybindChanged(object sender, KeybindChangedEventArgs e) {

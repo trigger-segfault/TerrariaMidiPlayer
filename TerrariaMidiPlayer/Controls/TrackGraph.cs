@@ -50,7 +50,7 @@ namespace TerrariaMidiPlayer.Controls {
 		private const double SpacingLabel = 4;
 
 		/**<summary>The color for recently played notes.</summary>*/
-		public static readonly SolidColorBrush RecentlyPlayedNoteBrush = Brushes.DarkGreen;
+		public static readonly SolidColorBrush RecentlyPlayedNoteBrush = Brushes.LimeGreen;
 		/**<summary>The color for valid notes.</summary>*/
 		public static readonly SolidColorBrush ValidNoteBrush = Brushes.Violet;
 		/**<summary>The color for wrapped notes.</summary>*/

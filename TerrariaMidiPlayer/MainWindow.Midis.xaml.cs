@@ -77,22 +77,23 @@ namespace TerrariaMidiPlayer {
 			loaded = true;
 		}
 		private void OnEditMidiName(object sender, RoutedEventArgs e) {
-			Stop();
-			loaded = false;
-
+			if (!Config.PianoMode) {
+				StopOrPause();
+				loaded = false;
+			}
 			if (Config.HasMidi) {
 				string newName = EditNameDialog.ShowDialog(this, Config.Midi.ProperName);
 				if (newName != null) {
+					loaded = false;
 					Config.Midi.Name = newName;
 					listMidis.Items[listMidis.SelectedIndex] = Config.Midi.ProperName;
 					listMidis.SelectedIndex = Config.MidiIndex;
+					loaded = true;
 				}
 			}
-
 			loaded = true;
 		}
 		private void OnMoveMidiUp(object sender, RoutedEventArgs e) {
-			Stop();
 			loaded = false;
 
 			if (Config.HasMidi && Config.MidiIndex > 0) {
@@ -112,7 +113,6 @@ namespace TerrariaMidiPlayer {
 			loaded = true;
 		}
 		private void OnMoveMidiDown(object sender, RoutedEventArgs e) {
-			Stop();
 			loaded = false;
 
 			if (Config.HasMidi && Config.MidiIndex + 1 < Config.MidiCount) {

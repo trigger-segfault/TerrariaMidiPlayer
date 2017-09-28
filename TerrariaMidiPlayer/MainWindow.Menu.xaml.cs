@@ -24,7 +24,7 @@ namespace TerrariaMidiPlayer {
 		#region Options
 
 		private void OnChangeKeybinds(object sender, RoutedEventArgs e) {
-			Stop();
+			StopOrPause();
 			loaded = false;
 			ChangeKeybindsDialog.ShowDialog(this);
 			loaded = true;

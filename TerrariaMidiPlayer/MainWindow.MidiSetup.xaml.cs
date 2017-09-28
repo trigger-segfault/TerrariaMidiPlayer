@@ -26,16 +26,19 @@ namespace TerrariaMidiPlayer {
 			UpdateTrack();
 		}
 		private void OnEditTrackName(object sender, RoutedEventArgs e) {
-			Stop();
-			loaded = false;
+			if (!Config.PianoMode) {
+				StopOrPause();
+				loaded = false;
+			}
 
 			string newName = EditNameDialog.ShowDialog(this, Config.Midi.GetTrackSettingsAt(trackIndex).ProperName);
 			if (newName != null) {
 				Config.Midi.GetTrackSettingsAt(trackIndex).Name = newName;
+				loaded = false;
 				((ListBoxItem)listTracks.Items[trackIndex]).Content = Config.Midi.GetTrackSettingsAt(trackIndex).ProperName;
 				//listTracks.SelectedIndex = trackIndex;
+				loaded = true;
 			}
-
 			loaded = true;
 		}
 		private void OnTrackEnabledClicked(object sender, RoutedEventArgs e) {
@@ -62,7 +65,9 @@ namespace TerrariaMidiPlayer {
 			UpdateTrackNotes();
 		}
 		private void OnTrackGraph(object sender, RoutedEventArgs e) {
-			Pause();
+			if (!Config.PianoMode) {
+				StopOrPause();
+			}
 			//loaded = false;
 			TrackGraphWindow.Show(this, Config.Midi, trackIndex);
 			//loaded = true;

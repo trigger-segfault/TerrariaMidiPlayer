@@ -293,7 +293,7 @@ namespace TerrariaMidiPlayer {
 				checkBoxMounted.IsChecked = mounted;
 			}
 			for (int i = 0; i < Config.Midis.Count; i++) {
-				if (Config.Midis[i].Keybind.IsDown(e) && (Config.PlaybackNoFocus || isActive || TerrariaWindowLocator.CheckIfFocused())) {
+				if (Config.MidiIndex != i && Config.Midis[i].Keybind.IsDown(e) && (Config.PlaybackNoFocus || isActive || TerrariaWindowLocator.CheckIfFocused())) {
 					Stop();
 
 					loaded = false;

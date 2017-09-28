@@ -156,6 +156,13 @@ namespace TerrariaMidiPlayer {
 			if (client != null)
 				ClientSongFinished();
 		}
+		/**<summary>Stop or pauses the song depending on if it's playing or not.</summary>*/
+		public void StopOrPause() {
+			if (Config.Sequencer.Position > 1)
+				Pause();
+			else
+				Stop();
+		}
 
 		#endregion
 		//========== PLAY NOTE ===========

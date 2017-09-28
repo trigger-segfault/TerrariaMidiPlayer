@@ -91,10 +91,9 @@ namespace TerrariaMidiPlayer.Windows {
 			InitialWidth = Width;
 			InitialHeight = Height;
 			Config.PianoMode = oldPianoMode;
-			if (Config.Sequencer.Position > 1)
-				Config.MainWindow.Pause();
-			else
-				Config.MainWindow.Stop();
+			if (!Config.PianoMode) {
+				Config.MainWindow.StopOrPause();
+			}
 		}
 		private void OnWindowSizeChanged(object sender, SizeChangedEventArgs e) {
 			if (!dragging)
@@ -226,10 +225,7 @@ namespace TerrariaMidiPlayer.Windows {
 		private void OnPianoToggled(object sender, RoutedEventArgs e) {
 			if (!loaded)
 				return;
-			if (Config.Sequencer.Position > 1)
-				Config.MainWindow.Pause();
-			else
-				Config.MainWindow.Stop();
+			Config.MainWindow.StopOrPause();
 			Config.PianoMode = toggleButtonPiano.IsChecked.Value;
 			UpdatePlayButtons();
 		}

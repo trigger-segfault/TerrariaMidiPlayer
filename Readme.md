@@ -5,6 +5,7 @@
 [![Total Downloads](https://img.shields.io/github/downloads/trigger-death/TerrariaMidiPlayer/total.svg?style=flat)](https://github.com/trigger-death/TerrariaMidiPlayer/releases)
 [![Creation Date](https://img.shields.io/badge/created-august%202017-A642FF.svg?style=flat)](https://github.com/trigger-death/TerrariaMidiPlayer/commit/2a6570de78f8c2fd8816b8ba9380614e1badec0f)
 [![Terraria Forums](https://img.shields.io/badge/terraria-forums-28A828.svg?style=flat)](https://forums.terraria.org/index.php?threads/61257/)
+[![Discord](https://img.shields.io/discord/436949335947870238.svg?style=flat&logo=discord&label=chat&colorB=7389DC&link=https://discord.gg/vB7jUbY)](https://discord.gg/vB7jUbY)
 
 A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi Player works by taking control of the mouse to click on the screen at the right coordinates to produce the correct notes as the midi plays. The program comes with a set of global hotkeys that can be pressed while focused on Terraria to force-stop the song or close Terraria Midi Player. The program will also force focus on Terraria when you start the song to avoid causing problems by clicking in unknown places.
 

@@ -337,9 +337,7 @@ namespace TerrariaMidiPlayer.Controls {
 			// Set guidelines for pixel perfection
 			GuidelineSet guidelines = new GuidelineSet();
 			guidelines.GuidelinesX.Add(0.5);
-			guidelines.GuidelinesX.Add(ActualHeight + 0.5);
 			guidelines.GuidelinesY.Add(0.5);
-			guidelines.GuidelinesY.Add(ActualWidth + 0.5);
 			d.PushGuidelineSet(guidelines);
 
 			// Highlight the midi's octave range

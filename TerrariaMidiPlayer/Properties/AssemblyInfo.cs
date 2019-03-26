@@ -12,7 +12,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Trigger's Tools & Games")]
 [assembly: AssemblyProduct("TerrariaMidiPlayer")]
-[assembly: AssemblyCopyright("Copyright © Robert Jordan 2017")]
+[assembly: AssemblyCopyright("Copyright © Robert Jordan {YEAR}")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -51,8 +51,8 @@ using System.Windows;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.1.0.1")]
-[assembly: AssemblyFileVersion("1.1.0.1")]
+[assembly: AssemblyVersion("1.1.0.2")]
+[assembly: AssemblyFileVersion("1.1.0.2")]
 [assembly: Guid("868163E6-E0A0-4035-AA63-3042476FD242")]
 [assembly: NeutralResourcesLanguage("en-US")]
 

@@ -100,12 +100,22 @@ namespace Sanford.Multimedia.Midi
 
             #endregion
 
-            format = trackCount = division = 0;
+            this.format = this.trackCount = this.division = 0;
 
-            FindHeader(strm);
-            Format = (int)ReadProperty(strm);
-            TrackCount = (int)ReadProperty(strm);
-            Division = (int)ReadProperty(strm);
+
+			FindHeader(strm);
+			int format = (int) ReadProperty(strm);
+			int trackCount = (int) ReadProperty(strm);
+			int division = (int) ReadProperty(strm);
+			
+			// Division must be set first if Ppqn
+			Division = division;
+			Format = format;
+			TrackCount = trackCount;
+
+			//Format = (int)ReadProperty(strm);
+            //TrackCount = (int)ReadProperty(strm);
+            //Division = (int)ReadProperty(strm);
 
             #region Invariant
 
@@ -245,7 +255,7 @@ namespace Sanford.Multimedia.Midi
             else
             {
                 Debug.Assert(SequenceType == SequenceType.Ppqn);
-                Debug.Assert(Division % PpqnClock.PpqnMinValue == 0);
+                Debug.Assert(Division >= PpqnClock.PpqnMinValue);
             }
         }
 
@@ -259,7 +269,7 @@ namespace Sanford.Multimedia.Midi
             {
                 #region Require
 
-                if(value < 0 || value > 3)
+                if(value < 0 || value > 2)
                 {
                     throw new ArgumentOutOfRangeException("Format", value,
                         "MIDI file format out of range.");
@@ -347,11 +357,11 @@ namespace Sanford.Multimedia.Midi
                 }
                 else 
                 {
-                    if(value % PpqnClock.PpqnMinValue != 0)
+                    if(value < PpqnClock.PpqnMinValue)
                     {
-                        throw new ArgumentException(
-                            "Invalid pulses per quarter note value.");
-                    }
+						throw new ArgumentOutOfRangeException("Ppqn", value,
+							"Pulses per quarter note is smaller than 24.");
+					}
                     else
                     {
                         sequenceType = SequenceType.Ppqn;

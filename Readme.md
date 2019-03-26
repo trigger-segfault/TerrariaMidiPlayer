@@ -17,7 +17,6 @@ A midi player for Terrarian instruments such as the Harp and Bell. Terraria Midi
 ## About
 
 * **Created By:** Robert Jordan
-* **Version:** 1.1.0.1
 * **Language:** C#, WPF
 
 ## Requirements for Running
